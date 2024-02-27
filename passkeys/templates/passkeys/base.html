@@ -10,7 +10,7 @@
             authBegin: "{% url 'passkeys:auth_begin' %}",
             regBegin: "{% url 'passkeys:reg_begin' %}",
             regComplete: "{% url 'passkeys:reg_complete' %}",
-            enroll: "{% url 'passkeys:enroll' kwargs={'enroll': True}%}",
+            enroll: "{% url 'passkeys:enroll' enroll=True %}",
             delKey: "{% url 'passkeys:delKey' %}",
             toggle: "{% url 'passkeys:toggle' %}",
         },
