@@ -11,6 +11,6 @@ urlpatterns = [
     path('enroll/',views.index, name='enroll',kwargs={'enroll':True}),
 
 
-    path('del/',views.delKey, name='delKey'),
-    path('toggle/',views.toggleKey, name='toggle'),
+    path('del/',views.del_key, name='delKey'),
+    path('toggle/',views.toggle_key, name='toggle'),
     ]
