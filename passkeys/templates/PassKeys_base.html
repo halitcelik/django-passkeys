@@ -1,6 +1,21 @@
 {% extends 'base.html' %}
 {% block head %}
 {{ block.super }}
+<script>
+    window.passkeysConfig = {
+        crossPlatform: {{request.session.passkey.cross_platform|default:0}},
+        enroll: {{enroll}},
+        urls: {
+            home: "{% url 'passkeys:home' %}",
+            authBegin: "{% url 'passkeys:auth_begin' %}",
+            regBegin: "{% url 'passkeys:reg_begin' %}",
+            regComplete: "{% url 'passkeys:reg_complete' %}",
+            enroll: "{% url 'passkeys:enroll' kwargs={'enroll': True}%}",
+            delKey: "{% url 'passkeys:delKey' %}",
+            toggle: "{% url 'passkeys:toggle' %}",
+        },
+    }
+</script>
 {% endblock %}
 {% block content %}
 {{ block.super }}

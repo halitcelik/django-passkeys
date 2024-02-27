@@ -30,7 +30,7 @@ var GetAssertReq = (getAssert) => {
         function start_authn(form,conditionalUI=false)
         {
             window.loginForm=form;
-         fetch('{% url 'passkeys:auth_begin' %}', {
+         fetch(window.passkeysConfig.urls.authBegin, {
       method: 'GET',
     }).then(function(response) {
       if(response.ok) {
