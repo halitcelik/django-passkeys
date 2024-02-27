@@ -124,7 +124,7 @@ var GetAssertReq = (getAssert) => {
 
 function start_authn(form, conditionalUI = false) {
     window.loginForm = form;
-    fetch(window.passkeysConfig.authBeginURL, {
+    fetch(window.passkeysConfig.urls.authBegin, {
         method: 'GET',
     }).then(function (response) {
         if (response.ok) {
@@ -210,7 +210,7 @@ var MakeCredReq = (makeCredReq) => {
     return makeCredReq
 }
 function beginReg() {
-    fetch(window.passkeysConfig.beginRegURL, {}).then(function (response) {
+    fetch(window.passkeysConfig.urls.authBegin, {}).then(function (response) {
         if (response.ok) {
             return response.json().then(function (req) {
                 return MakeCredReq(req)
@@ -225,7 +225,7 @@ function beginReg() {
         return navigator.credentials.create(options);
     }).then(function (attestation) {
         attestation["key_name"] = $("#key_name").val();
-        return fetch(window.passkeysConfig.completeRegURL, {
+        return fetch(window.passkeysConfig.urls.regComplete, {
             method: 'POST',
             body: JSON.stringify(publicKeyCredentialToJSON(attestation))
         });
@@ -250,11 +250,11 @@ function beginReg() {
 
 function confirmDel(id) {
     $.ajax({
-        url: "{% url 'passkeys:delKey' %}",
+        url: window.passkeysConfig.urls.delKey,
         data: { "id": id },
         success: function (data) {
             alert(data)
-            window.location = "{%url 'passkeys:home'%}";
+            window.location = window.passkeysConfig.urls.home;
         }
     })
 }
@@ -279,7 +279,7 @@ function deleteKey(id, name) {
 
 function toggleKey(id) {
     $.ajax({
-        url: "{% url 'passkeys:toggle' %}?id=" + id,
+        url: `${window.passkeysConfig.urls.toggle}?id=${id}`,
         success: function (data) {
             if (data == "Error")
                 $("#toggle_" + id).toggle()
