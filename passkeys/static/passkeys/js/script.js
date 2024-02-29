@@ -267,7 +267,7 @@ function start() {
                             `)
     $("#actionBtn").remove();
     $("#modal-footer").prepend(`<button id='actionBtn' class='btn btn-success' onclick="beginReg()">Start</button>`)
-    $("#popUpModal").modal('show')
+    $("#popUpModal").show();
 }
 function deleteKey(id, name) {
     $("#modal-title").html("Confirm Delete")
