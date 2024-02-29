@@ -210,7 +210,7 @@ var MakeCredReq = (makeCredReq) => {
     return makeCredReq
 }
 function beginReg() {
-    fetch(window.passkeysConfig.urls.authBegin, {}).then(function (response) {
+    fetch(window.passkeysConfig.urls.regBegin, {}).then(function (response) {
         if (response.ok) {
             return response.json().then(function (req) {
                 return MakeCredReq(req)
