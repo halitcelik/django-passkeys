@@ -143,7 +143,7 @@ function start_authn(form, conditionalUI = false) {
         console.log(options)
         return navigator.credentials.get(options);
     }).then(function (assertion) {
-        pk = $("#passkeys")
+        pk = document.querySelector("#passkeys").value;
         if (pk.length == 0) {
             console.error("Did you add the 'passkeys' hidden input field")
             return
