@@ -73,7 +73,7 @@ def reg_begin(request):
     auth_attachment = getattr(settings, "KEY_ATTACHMENT", None)
     registration_data, state = server.register_begin(
         {
-            "id": urlsafe_b64encode(request.user.username.encode("utf8")),
+            "id": urlsafe_b64encode(request.user.get_username().encode("utf8")),
             "name": request.user.get_username(),
             "displayName": request.user.get_full_name(),
         },

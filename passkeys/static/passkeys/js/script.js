@@ -123,7 +123,6 @@ var GetAssertReq = (getAssert) => {
 }
 
 function start_authn(form, conditionalUI = false) {
-    window.loginForm = form;
     fetch(window.passkeysConfig.urls.authBegin, {
         method: 'GET',
     }).then(function (response) {
@@ -148,8 +147,8 @@ function start_authn(form, conditionalUI = false) {
             console.error("Did you add the 'passkeys' hidden input field")
             return
         }
-        pk.val(JSON.stringify(publicKeyCredentialToJSON(assertion)));
-        x = document.getElementById(window.loginForm)
+        pk.value = JSON.stringify(publicKeyCredentialToJSON(assertion));
+        x = document.getElementById(form.id)
         if (x === null || x === undefined) {
             console.error("Did you pass the correct form id to auth function")
             return;
