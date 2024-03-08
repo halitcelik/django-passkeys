@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 class UserPasskey(models.Model):
@@ -15,3 +16,10 @@ class UserPasskey(models.Model):
 
     def __str__(self):
         return f"UserPasskey: {self.user} - {self.name}"
+
+
+class OTP(models.Model):
+    email = models.EmailField(_("Email"), max_length=254)
+    key = models.CharField(max_length=6, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

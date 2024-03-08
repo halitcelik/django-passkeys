@@ -1,7 +1,10 @@
 (function () {
-    // Define base64url encoding and decoding functions
-    const base64urlEncode = (bytes) => {
-        const arrayBuf = ArrayBuffer.isView(bytes) ? bytes : new Uint8Array(bytes);
+    const base64urlEncode = (array) => {
+        let arrayBuf = array
+        if (typeof array === "object") {
+            arrayBuf = ArrayBuffer.isView(array) ? array : new Uint8Array(array);
+        }
+
         const binString = Array.from(arrayBuf, (x) => String.fromCodePoint(x)).join("");
         return btoa(binString).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
     };
@@ -12,13 +15,46 @@
         return Uint8Array.from(binString, (m) => m.codePointAt(0));
     };
 
+    function arrayToBuffer(array) {
+        /*Sometimes it is already an ArrayBuffer*/
+        if (array.buffer) {
+            return array.buffer.slice(array.byteOffset, array.byteLength + array.byteOffset)
+        }
+        return array
+    }
+
+    function assertFunc(assertion) {
+        pk_input = document.getElementById("passkeys");
+        if (pk_input.length == 0) {
+            console.error("Did you add the 'passkey' hidden input field")
+            return
+        }
+        if (assertion.rawId) {
+            assertion.rawId = arrayToBuffer(assertion.rawId);
+        }
+        for (let key in assertion.response) {
+            /*Careful about null values. On PC worked fine but on the android got null value */
+            if (!Object.is(assertion.response[key], null)) {
+                assertion.response[key] = arrayToBuffer(assertion.response[key])
+            }
+        }
+
+        pk_input.value = JSON.stringify(credToJSON(assertion));
+        let form = document.getElementById("loginForm")
+        if (form === null || form === undefined) {
+            console.error("Did you pass the correct form id to auth function")
+            return;
+        }
+        form.submit()
+    }
+
     // Define function to convert credentials to JSON
     const credToJSON = (pubKeyCred) => {
         if (pubKeyCred instanceof Array) {
             return pubKeyCred.map(credToJSON);
         }
         if (pubKeyCred instanceof ArrayBuffer) {
-            return base64urlDecode(pubKeyCred);
+            return base64urlEncode(pubKeyCred);
         }
         if (pubKeyCred instanceof Object) {
             const res = {};
@@ -54,36 +90,35 @@
         fetch(window.passkeysConfig.urls.authBegin, {
             method: 'GET',
         })
-        .then(response => {
-            if (response.ok) {
-                return response.json().then(getAssertReq);
-            }
-            throw new Error('No credential available to authenticate!');
-        })
-        .then(options => {
-            if (conditionalUI) {
-                options.mediation = 'conditional';
-                options.signal = window.conditionUIAbortSignal;
-            } else {
-                window.conditionUIAbortController.abort();
-            }
-            return navigator.credentials.get(options);
-        })
-        .then(assertion => {
-            const pk = document.querySelector("#passkeys");
-            if (!pk) {
-                console.error("Did you add the 'passkeys' hidden input field?");
-                return;
-            }
-            pk.value = JSON.stringify(credToJSON(assertion));
-            console.log(pk.value);
-            const formElement = document.getElementById(form);
-            if (!formElement) {
-                console.error("Did you pass the correct form id to auth function?");
-                return;
-            }
-            formElement.submit();
-        });
+            .then(response => {
+                if (response.ok) {
+                    return response.json().then(getAssertReq);
+                }
+                throw new Error('No credential available to authenticate!');
+            })
+            .then(options => {
+                if (conditionalUI) {
+                    options.mediation = 'conditional';
+                    options.signal = window.conditionUIAbortSignal;
+                } else {
+                    window.conditionUIAbortController.abort();
+                }
+                return navigator.credentials.get(options);
+            })
+            .then(assertion => {
+                const pk = document.querySelector("#passkeys");
+                if (!pk) {
+                    console.error("Did you add the 'passkeys' hidden input field?");
+                    return;
+                }
+                pk.value = JSON.stringify(assertion);
+                const formElement = document.getElementById(form);
+                if (!formElement) {
+                    console.error("Did you pass the correct form id to auth function?");
+                    return;
+                }
+                formElement.submit();
+            });
         document.addEventListener("DOMContentLoaded", () => {
             if (window.location.protocol != 'https:') {
                 console.error("Passkeys must work under secure context");
@@ -91,45 +126,43 @@
         });
     };
 
-    // Define function to initiate registration process
     const beginReg = () => {
         fetch(window.passkeysConfig.urls.regBegin, {})
-        .then(response => {
-            if (response.ok) {
-                return response.json().then(makeCredReq);
-            }
-            throw new Error('Error getting registration data!');
-        })
-        .then(options => {
-            return navigator.credentials.create(options);
-        })
-        .then(attestation => {
-            attestation["key_name"] = document.querySelector("#key_name").value;
-            attestation["rawId"] = base64urlEncode(attestation["rawId"]);
-            for (const key in attestation["response"]) {
-                attestation["response"][key] = base64urlEncode(attestation.response[key]);
-            }
-            return fetch(window.passkeysConfig.urls.regComplete, {
-                method: 'POST',
-                body: JSON.stringify(credToJSON(attestation))
+            .then(response => {
+                if (response.ok) {
+                    return response.json().then(makeCredReq);
+                }
+                throw new Error('Error getting registration data!');
+            })
+            .then(options => {
+                return navigator.credentials.create(options);
+            })
+            .then(attestation => {
+                attestation["key_name"] = document.querySelector("#key_name").value;
+                attestation["rawId"] = base64urlEncode(attestation["rawId"]);
+                for (const key in attestation["response"]) {
+                    attestation["response"][key] = base64urlEncode(attestation.response[key]);
+                }
+                return fetch(window.passkeysConfig.urls.regComplete, {
+                    method: 'POST',
+                    body: JSON.stringify(credToJSON(attestation))
+                });
+            })
+            .then(response => {
+                return response.json();
+            })
+            .then(res => {
+                if (res["status"] == 'OK') {
+                    document.querySelector("#res").insertAdjacentHTML("afterbegin", `<div class='alert alert-success'>Registered Successfully, <a href='${window.passkeysConfig.homeURL}'> Refresh</a></div>`);
+                } else {
+                    document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>Registration Failed as " + res + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
+                }
+            })
+            .catch(reason => {
+                document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>Registration Failed as " + reason + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
             });
-        })
-        .then(response => {
-            return response.json();
-        })
-        .then(res => {
-            if (res["status"] == 'OK') {
-                document.querySelector("#res").insertAdjacentHTML("afterbegin", `<div class='alert alert-success'>Registered Successfully, <a href='${window.passkeysConfig.homeURL}'> Refresh</a></div>`);
-            } else {
-                document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>Registration Failed as " + res + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
-            }
-        })
-        .catch(reason => {
-            document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>Registration Failed as " + reason + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
-        });
     };
 
-    // Function to confirm deletion
     function confirmDel(id) {
         fetch(window.passkeysConfig.urls.delKey, {
             method: 'POST',
@@ -138,50 +171,44 @@
             },
             body: JSON.stringify({ id: id })
         })
-        .then(response => response.text())
-        .then(data => {
-            alert(data);
-            window.location = window.passkeysConfig.urls.home;
-        })
-        .catch(error => {
-            console.error('Error confirming deletion:', error);
-        });
+            .then(response => response.text())
+            .then(data => {
+                alert(data);
+                window.location = window.passkeysConfig.urls.home;
+            })
+            .catch(error => {
+                console.error('Error confirming deletion:', error);
+            });
     }
 
-    // Function to start registration process
     function startRegistration() {
         const modalTitle = document.querySelector("#modal-title");
         const modalBody = document.querySelector("#modal-body");
-        const actionBtn = document.querySelector("#actionBtn");
 
         modalTitle.innerHTML = "Enter a token name";
         modalBody.innerHTML = `<p>Please enter a name for your new token</p>
                                 <input type="text" placeholder="e.g Laptop, PC" id="key_name" class="form-control"/><br/>
                                 <div id="res"></div>`;
-        actionBtn.remove();
         const modalFooter = document.querySelector("#modal-footer");
         modalFooter.insertAdjacentHTML('afterbegin', `<button id='actionBtn' class='btn btn-success' onclick="djangoPasskey.beginReg()">Start</button>`);
         document.querySelector("#popUpModal").style.display = "block";
     }
 
 
-    // Export functions
-    const methods = {
-        base64urldecode: base64urldecode,
-        base64urlencode: base64urlencode,
-        credToJson: credToJSON,
+    window.djangoPasskey = {
+        base64urlDecode: base64urlDecode,
+        base64urlEncode: base64urlEncode,
+        credToJSON: credToJSON,
         getAssertReq: getAssertReq,
         startAuthn: startAuthn,
         makeCredReq: makeCredReq,
         beginReg: beginReg,
         startRegistration: startRegistration,
         confirmDel: confirmDel,
+        assertFunc: assertFunc
     };
 
-    // Add methods to djangoPasskey object
-    Object.assign(window.djangoPasskey, methods);
 
-    // Initialize conditional UI variables
     window.conditionalUI = false;
     window.conditionUIAbortController = new AbortController();
     window.conditionUIAbortSignal = window.conditionUIAbortController.signal;

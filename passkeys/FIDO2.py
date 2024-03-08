@@ -36,7 +36,7 @@ def getUserCredentials(user):
     ]
 
 
-def getServer(request=None):
+def get_server(request=None):
     """Get Server Info from settings and returns a Fido2Server"""
     if callable(settings.FIDO_SERVER_ID):
         fido_server_id = settings.FIDO_SERVER_ID(request)
@@ -69,7 +69,7 @@ def get_current_platform(request):
 def reg_begin(request):
     """Starts registering a new FIDO Device, called from API"""
     enable_json_mapping()
-    server = getServer(request)
+    server = get_server(request)
     auth_attachment = getattr(settings, "KEY_ATTACHMENT", None)
     registration_data, state = server.register_begin(
         {
@@ -100,7 +100,7 @@ def reg_complete(request):
         enable_json_mapping()
         data = json.loads(request.body)
         name = data.pop("key_name", "")
-        server = getServer(request)
+        server = get_server(request)
         auth_data = server.register_complete(
             request.session.pop("fido2_state"), response=data
         )
@@ -123,7 +123,7 @@ def reg_complete(request):
 
 def auth_begin(request):
     enable_json_mapping()
-    server = getServer(request)
+    server = get_server(request)
     credentials = []
     username = None
     User = get_user_model()
@@ -140,9 +140,8 @@ def auth_begin(request):
 
 @csrf_exempt
 def auth_complete(request):
-    enable_json_mapping()
     credentials = []
-    server = getServer(request)
+    server = get_server(request)
     data = json.loads(request.POST["passkeys"])
     key = None
     # userHandle = data.get("response",{}).get('userHandle')
@@ -167,7 +166,7 @@ def auth_complete(request):
             cred = server.authenticate_complete(
                 request.session.pop("fido2_state"),
                 credentials=credentials,
-                response=data,
+                response=websafe_decode(data),
             )
         except ValueError:  # pragma: no cover
             return None  # pragma: no cover
