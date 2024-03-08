@@ -14,7 +14,7 @@ from passkeys.FIDO2 import (
     auth_complete,
     enable_json_mapping,
     getServer,
-    getUserCredentials,
+    get_user_credentials,
 )
 from passkeys.models import UserPasskey
 
@@ -80,7 +80,9 @@ def login_view(request):
 
                 enable_json_mapping()
                 User = get_user_model()
-                credentials = getUserCredentials(request.POST.get(User.USERNAME_FIELD))
+                credentials = get_user_credentials(
+                    request.POST.get(User.USERNAME_FIELD)
+                )
                 server = getServer(request)
                 user_passkey = UserPasskey.objects.filter(
                     user__email=request.POST.get("email"), enabled=True

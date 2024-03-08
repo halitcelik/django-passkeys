@@ -1,4 +1,5 @@
 import json
+import uuid
 from base64 import urlsafe_b64encode
 import traceback
 
@@ -13,7 +14,6 @@ from fido2.utils import websafe_decode, websafe_encode
 from fido2.webauthn import (
     PublicKeyCredentialRpEntity,
     AttestedCredentialData,
-    RegistrationResponse,
 )
 from .models import UserPasskey
 from user_agents.parsers import parse as ua_parse
@@ -26,7 +26,7 @@ def enable_json_mapping():
         pass
 
 
-def getUserCredentials(user):
+def get_user_credentials(user):
     User = get_user_model()
     username_field = User.USERNAME_FIELD
     filter_args = {"user__" + username_field: user}
@@ -71,19 +71,28 @@ def reg_begin(request):
     enable_json_mapping()
     server = get_server(request)
     auth_attachment = getattr(settings, "KEY_ATTACHMENT", None)
+    # if the user has a uuid pk use that
+    if isinstance(request.user.pk, uuid.UUID):
+        user_id = str(request.user.pk)
+    else:
+        if hasattr(request.user, "uuid") and isinstance(request.user.uuid, uuid.UUID):
+            user_id = str(request.user.uuid)
+        else:
+            user_id = request.user.get_username()
     registration_data, state = server.register_begin(
         {
-            "id": urlsafe_b64encode(request.user.get_username().encode("utf8")),
-            "name": request.user.get_username(),
-            "displayName": request.user.get_full_name(),
+            "id": urlsafe_b64encode(user_id.encode("utf8")),
+            "name": user_id,
+            "displayName": request.user.get_username(),
         },
-        getUserCredentials(request.user),
+        get_user_credentials(request.user),
         authenticator_attachment=auth_attachment,
         resident_key_requirement=fido2.webauthn.ResidentKeyRequirement.PREFERRED,
     )
+    registration_data = dict(registration_data)
+
     request.session["fido2_state"] = state
-    return JsonResponse(dict(registration_data))
-    # return HttpResponse(cbor.encode(registration_data), content_type = 'application/octet-stream')
+    return JsonResponse(registration_data)
 
 
 @csrf_exempt
@@ -132,7 +141,7 @@ def auth_begin(request):
     if request.user.is_authenticated:
         username = getattr(request.user, User.USERNAME_FIELD)
     if username:
-        credentials = getUserCredentials(username)
+        credentials = get_user_credentials(username)
     auth_data, state = server.authenticate_begin(credentials)
     request.session["fido2_state"] = state
     return JsonResponse(dict(auth_data))
@@ -144,17 +153,7 @@ def auth_complete(request):
     server = get_server(request)
     data = json.loads(request.POST["passkeys"])
     key = None
-    # userHandle = data.get("response",{}).get('userHandle')
     credential_id = data["id"]
-    #
-    # if userHandle:
-    #     if User_Passkey.objects.filter(=userHandle).exists():
-    #         credentials = getUserCredentials(userHandle)
-    #         username=userHandle
-    #     else:
-    #         keys = User_Keys.objects.filter(user_handle = userHandle)
-    #         if keys.exists():
-    #             credentials = [AttestedCredentialData(websafe_decode(keys[0].properties["device"]))]
 
     keys = UserPasskey.objects.filter(credential_id=credential_id, enabled=1)
     if keys.exists():
@@ -163,7 +162,7 @@ def auth_complete(request):
         key = keys[0]
 
         try:
-            cred = server.authenticate_complete(
+            server.authenticate_complete(
                 request.session.pop("fido2_state"),
                 credentials=credentials,
                 response=websafe_decode(data),
