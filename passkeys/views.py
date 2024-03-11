@@ -33,11 +33,11 @@ UserModel = get_user_model()
 def login_view(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Next")
-    template = "passkeys/auth/login.html"
+    template = "passkeys/login.html"
     auth_data = {}
     login_options = []
     if hasattr(request, "htmx") and request.htmx:
-        template = "auth/includes/login-form.html"
+        template = "passkeys/includes/login-form.html"
     if request.method == "POST":
         form = PasswordLoginForm(request.POST)
         if request.POST.get("password"):
