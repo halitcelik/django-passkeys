@@ -165,7 +165,7 @@ def auth_complete(request):
             server.authenticate_complete(
                 request.session.pop("fido2_state"),
                 credentials=credentials,
-                response=websafe_decode(data),
+                response=data,
             )
         except ValueError:  # pragma: no cover
             return None  # pragma: no cover

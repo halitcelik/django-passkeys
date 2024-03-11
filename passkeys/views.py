@@ -119,7 +119,13 @@ def login_view(request):
             "button_text": button_text,
             "current_page": "auth.login",
             "auth_data": auth_data,
-            "login_options": login_options,
+            "login_options": [
+                {
+                    "option": option,
+                    "template": f"passkeys/includes/login-with-{option}.html",
+                }
+                for option in login_options
+            ],
         },
     )
 

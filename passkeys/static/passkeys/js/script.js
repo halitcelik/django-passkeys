@@ -195,6 +195,7 @@
 
     window.djangoPasskey = {
         startRegistration: startRegistration,
+
         beginReg: beginReg,
         initialize: initialize
     };
@@ -213,13 +214,13 @@ function authn(formId) {
 
 /* TODO */
 function displayPasskeyOption() {
-    // Availability of `window.PublicKeyCredential` means WebAuthn is usable.  
-    // `isUserVerifyingPlatformAuthenticatorAvailable` means the feature detection is usable.  
-    // `​​isConditionalMediationAvailable` means the feature detection is usable.  
+    // Availability of `window.PublicKeyCredential` means WebAuthn is usable.
+    // `isUserVerifyingPlatformAuthenticatorAvailable` means the feature detection is usable.
+    // `​​isConditionalMediationAvailable` means the feature detection is usable.
     if (window.PublicKeyCredential &&
         PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable &&
         PublicKeyCredential.isConditionalMediationAvailable) {
-        // Check if user verifying platform authenticator is available.  
+        // Check if user verifying platform authenticator is available.
         Promise.all([
             PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
             PublicKeyCredential.isConditionalMediationAvailable(),
