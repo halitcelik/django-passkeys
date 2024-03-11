@@ -81,7 +81,7 @@ def login_view(request):
                 form = OTPLoginForm(request.POST)
                 otp = otp.first()
                 user = UserModel.objects.get(email=form.cleaned_data.get("email"))
-                form.login_user(request)
+                login(request, user)
                 return HttpResponseRedirect(
                     request.GET.get("next", form.cleaned_data.get("next", "/"))
                 )
