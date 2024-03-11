@@ -51,7 +51,7 @@ class PasswordLoginForm(LoginOptionsForm):
 
 
 class OTPLoginForm(forms.Form):
-    otp = forms.CharField(_("OTP"), max_length=6, required=True)
+    otp = forms.CharField(label=_("OTP"), max_length=6, required=True)
     email = forms.HiddenInput()
     next = forms.CharField(required=False, widget=forms.HiddenInput())
 
