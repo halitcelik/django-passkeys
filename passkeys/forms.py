@@ -4,21 +4,8 @@ from django import forms
 from django.contrib.auth import authenticate, get_user_model, login
 from django.utils.translation import gettext_lazy as _
 
-from django.contrib.auth.forms import UserCreationForm
 
 UserModel = get_user_model()
-
-
-class EmailSignupForm(UserCreationForm):
-    class Meta:
-        model = UserModel
-        fields = ("email",)
-
-
-class UsernameSignupForm(UserCreationForm):
-    class Meta:
-        model = UserModel
-        fields = ("username",)
 
 
 class LoginOptionsForm(forms.Form):
