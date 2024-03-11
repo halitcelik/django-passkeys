@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class UserPasskey(models.Model):
-    uuid = models.UUIDField(_("UUID"), default=uuid.uuid4())
+    uuid = models.UUIDField(_("UUID"), default=uuid.uuid4)
     user_model = get_user_model()
     user = models.ForeignKey(user_model, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
