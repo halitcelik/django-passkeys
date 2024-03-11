@@ -53,7 +53,7 @@ def login_options(request):
                 reverse(f"passkeys:login.{request.POST.get('type')}")
             )
         else:
-            return HttpResponseRedirect("passkeys:login.password")
+            return HttpResponseRedirect(reverse("passkeys:login.password"))
 
     return render(
         request,
