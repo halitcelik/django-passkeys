@@ -1,0 +1,18 @@
+{% extends "passkeys/base.html" %}
+{% load i18n static %}
+{% block headtitle %}{% trans "Login" %}{{block.super}}{% endblock headtitle %}
+{% block content %}
+<main>
+    <h1>{% trans "Login" %}</h1>
+    <form id="loginForm" hx-post="." method="post" action=".">
+        {% csrf_token %}
+        {{form.as_p}}
+        <div class="buttons-grid grid">
+            <input type="submit" class="action-button button"  value="{{ button_text }}" />
+        </div>
+    </form>
+        {% for option in login_options %}
+        {% include option.template %}
+    {% endfor %} 
+</main>
+{% endblock %}
