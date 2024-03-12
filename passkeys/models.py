@@ -35,13 +35,13 @@ class OTP(models.Model):
         if self.email and self.key:
             html = render_to_string(
                 "passkeys/email/otp.html",
-                {"code": self.code, "subject": subject},
+                {"key": self.key, "subject": subject},
             )
             text = strip_tags(
                 render_to_string(
                     "passkeys/email/otp.html",
                     {
-                        "code": self.code,
+                        "key": self.key,
                         "subject": subject,
                     },
                 )
@@ -50,7 +50,7 @@ class OTP(models.Model):
                 subject=subject,
                 body=text,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=self.email,
+                to=(self.email,),
             )
             email.attach_alternative(html, "text/html")
             email.send()
