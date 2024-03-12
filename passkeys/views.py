@@ -6,16 +6,16 @@ from django.utils.timezone import now as utc_now
 
 from .models import UserPasskey, OTP
 from django.utils.translation import gettext_lazy as _
-from .forms import PasswordLoginForm, OTPLoginForm, PasskeyLoginForm
 from string import digits
 import random
 from django.conf import settings
-from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth import get_user_model, login
 from django.utils.translation import gettext_lazy as _
 from passkeys.backend import PasskeyBackendException
 from passkeys.FIDO2 import (
     auth_complete,
 )
+from django import forms
 from passkeys.models import UserPasskey
 
 from django.conf import settings
@@ -26,7 +26,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from .forms import LoginOptionsForm, PasskeyLoginForm, PasswordLoginForm
+from .forms import LoginOptionsForm, PasswordLoginForm, OTPLoginForm
 
 UserModel = get_user_model()
 
@@ -35,41 +35,57 @@ def login_options(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Next")
     template = "passkeys/login.html"
-    login_options = ["password"]
     form = LoginOptionsForm(initial={"next": next_})
+    filter_args = {UserModel.USERNAME_FIELD: None}
+    options = []
     if hasattr(request, "htmx") and request.htmx:
         template = "passkeys/includes/login-form.html"
     if request.method == "POST":
+        form = PasswordLoginForm(
+            initial={
+                UserModel.USERNAME_FIELD: request.POST.get(UserModel.USERNAME_FIELD),
+                "next": next_,
+            }
+        )
         username = request.POST.get(UserModel.USERNAME_FIELD)
         filter_args = {UserModel.USERNAME_FIELD: username}
         user = UserModel.objects.filter(**filter_args)
         if user.exists():
-            login_options.append("otp")
-            passkeys = UserPasskey.objects.filter(user=user)
+            if request.POST.get("password"):
+                try:
+                    form = PasswordLoginForm(request.POST)
+                    if form.is_valid():
+                        form.login_user(request)
+                        return HttpResponseRedirect(
+                            request.GET.get("next", form.cleaned_data.get("next", "/"))
+                        )
+                except PasskeyBackendException:
+                    form.add_error(
+                        field=None,
+                        error=ValidationError(
+                            mark_safe(
+                                f"""
+                                Email adresse or password wrong. No account yet?
+                                <a href='{reverse("auth.signup")}'>Signup</a>"""
+                            )
+                        ),
+                    )
+
+            passkeys = UserPasskey.objects.filter(user=user.first())
             if passkeys.exists():
-                login_options.append("passkey")
-        if request.POST.get("type"):
-            return HttpResponseRedirect(
-                reverse(f"passkeys:login.{request.POST.get('type')}")
-            )
-        else:
-            return HttpResponseRedirect(reverse("passkeys:login.password"))
+                options.append({"value": "passkey", "text": "Login with passkey"})
+            options.append({"value": "otp", "text": _("Receive email code")})
 
     return render(
         request,
         template,
         {
+            **filter_args,
             "form": form,
             "next": next_,
             "button_text": button_text,
             "current_page": "auth.login",
-            "login_options": [
-                {
-                    "option": option,
-                    "template": f"passkeys/includes/login-with-{option}-button.html",
-                }
-                for option in login_options
-            ],
+            "login_options": options,
         },
     )
 
@@ -94,160 +110,62 @@ def passkey_login(request):
             return render(request, "passkeys/login.html")
 
 
-def password_login(request):
-    form = PasswordLoginForm()
-    next_ = request.GET.get("next", request.POST.get("next", "/"))
-    if request.method == "POST":
-        form = PasswordLoginForm(request.POST)
-        if request.POST.get("password"):
-            try:
-                if form.is_valid():
-                    form.login_user(request)
-                    return HttpResponseRedirect(
-                        request.GET.get("next", form.cleaned_data.get("next", "/"))
-                    )
-            except PasskeyBackendException:
-                form.add_error(
-                    field=None,
-                    error=ValidationError(
-                        mark_safe(
-                            f"""
-                            Email adresse or password wrong. No account yet?
-                            <a href='{reverse("auth.signup")}'>Signup</a>"""
-                        )
-                    ),
-                )
-    return render(
-        request, "passkeys/password-login.html", {"form": form, "next": next_}
-    )
-
-
 def otp_login(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
+    button_text = _("Verify")
     if request.method == "POST":
-        form = OTPLoginForm(request.POST)
-        if request.POST.get("otp"):
-            otp = OTP.objects.filter(
-                key=form.cleaned_data.get("otp"),
-                email=form.cleaned_data.get("email"),
-                created_at__gte=utc_now() - datetime.timedelta(seconds=60),
-            )
-            if otp.exists():
-                otp = otp.first()
-                user = UserModel.objects.get(email=form.cleaned_data.get("email"))
-                login(request, user)
+        form = LoginOptionsForm(request.POST)
+        email = request.POST.get("email")
+        if OTP.objects.filter(
+            email=email, created_at__gte=utc_now() - datetime.timedelta(seconds=60)
+        ).exists():
+            form = OTPLoginForm(request.POST)
+            if request.POST.get("otp"):
+                form = OTPLoginForm(request.POST)
+                if form.is_valid():
+                    otp = OTP.objects.filter(
+                        key=form.cleaned_data.get("otp"),
+                        email=form.cleaned_data.get("email"),
+                        created_at__gte=utc_now() - datetime.timedelta(seconds=60),
+                    )
+                    if otp.exists():
+                        otp = otp.first()
+                        user = UserModel.objects.get(email=request.POST.get("email"))
+                        login(
+                            request,
+                            user,
+                            backend=[
+                                be
+                                for be in settings.AUTHENTICATION_BACKENDS
+                                if "EmailBackend" in be
+                            ][0],
+                        )
+                        return HttpResponseRedirect(
+                            request.GET.get("next", form.cleaned_data.get("next", "/"))
+                        )
+                    else:
+                        form.add_error(
+                            None,
+                            _(
+                                "Your OTP code is either expired or invalid. Ask a new one."
+                            ),
+                        )
+                        form.fields.pop("otp")
+                        form.fields["email"].widget = forms.EmailInput()
+                        button_text = _("Resend verification code")
         else:
+            form = OTPLoginForm(request.POST)
             new_otp = OTP.objects.create(
-                otp="".join(random.choice(digits) for i in range(6)),
-                email=form.cleaned_data.get("email"),
+                key="".join(random.choice(digits) for i in range(6)),
+                email=request.POST.get("email"),
             )
             new_otp.send()
-            return render(
-                request, "passkeys/otp-login.html", {"form": form, "next": next_}
-            )
-
-
-def login_view(request):
-    next_ = request.GET.get("next", request.POST.get("next", "/"))
-    button_text = _("Next")
-    template = "passkeys/login.html"
-    login_options = []
-    if hasattr(request, "htmx") and request.htmx:
-        template = "passkeys/includes/login-form.html"
-    if request.method == "POST":
-        form = PasswordLoginForm(request.POST)
-        if request.POST.get("password"):
-            try:
-                if form.is_valid():
-                    form.login_user(request)
-                    return HttpResponseRedirect(
-                        request.GET.get("next", form.cleaned_data.get("next", "/"))
-                    )
-            except PasskeyBackendException:
-                form.add_error(
-                    field=None,
-                    error=ValidationError(
-                        mark_safe(
-                            f"""
-                            Email adresse or password wrong. No account yet?
-                            <a href='{reverse("auth.signup")}'>Signup</a>"""
-                        )
-                    ),
-                )
-        elif request.POST.get("passkeys"):
-            user = auth_complete(request)
-            if user:
-                login(
-                    request,
-                    user,
-                    backend=[
-                        be
-                        for be in settings.AUTHENTICATION_BACKENDS
-                        if "PasskeyModelBackend" in be
-                    ][0],
-                )
-                return HttpResponseRedirect(next_)
-        elif request.POST.get("otp"):
-            otp = OTP.objects.filter(
-                key=request.POST.get("otp"),
-                email=request.POST.get("email"),
-                created_at__gte=utc_now() - datetime.timedelta(seconds=60),
-            )
-            if otp.exists():
-                form = OTPLoginForm(request.POST)
-                otp = otp.first()
-                user = UserModel.objects.get(email=form.cleaned_data.get("email"))
-                login(request, user)
-                return HttpResponseRedirect(
-                    request.GET.get("next", form.cleaned_data.get("next", "/"))
-                )
-
-        user_passkey = UserPasskey.objects.filter(
-            user__email=request.POST.get("email"), enabled=True
-        ).first()
-        username = request.POST.get(UserModel.USERNAME_FIELD)
-        filter_args = {UserModel.USERNAME_FIELD: username}
-        user = UserModel.objects.filter(**filter_args)
-        if user.exists():
-            login_options.append("otp")
-        if user_passkey is not None:
-            login_options.append("passkey")
-            request.session["base_username"] = username
-            form = PasskeyLoginForm(
-                initial={"next": next_, "email": request.POST.get("email")}
-            )
-        elif username:
-            login_options.append("password")
-            form = PasswordLoginForm(
-                initial={"next": next_, "email": request.POST.get("email")}
-            )
-        button_text = _("Signin")
-
-    else:
-        form = LoginOptionsForm(initial={"next": next_})
-
-    return render(
-        request,
-        template,
-        {
-            "form": form,
-            "next": next_,
-            "button_text": button_text,
-            "current_page": "auth.login",
-            "login_options": [
-                {
-                    "option": option,
-                    "template": f"passkeys/includes/login-with-{option}.html",
-                }
-                for option in login_options
-            ],
-        },
-    )
-
-
-def logout_view(request):
-    logout(request)
-    return HttpResponseRedirect("/")
+            button_text = _("Verify")
+        return render(
+            request,
+            "passkeys/otp-login.html",
+            {"form": form, "next": next_, "button_text": button_text},
+        )
 
 
 @login_required
