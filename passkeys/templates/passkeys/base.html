@@ -1,5 +1,24 @@
 {% extends 'base.html' %}
+
 {% block head %}
+    <style>
+        #id_otp {
+            padding-left: 15px;
+            letter-spacing: 42px;
+            border: 0;
+            background-image: linear-gradient(to left, black 70%, rgba(255, 255, 255, 0) 0%);
+            background-position: bottom;
+            background-position-x: center;
+            background-size: 50px 1px;
+            background-repeat: repeat-x;
+            background-position-x: 35px;
+            width: 270px;
+            outline: none;
+        }
+    </style>
+{% endblock head %}
+    
+{% block endbodyscript %}
 {{ block.super }}
 <script>
     window.passkeysConfig = {
@@ -13,8 +32,63 @@
             enroll: "{% url 'passkeys:enroll' enroll=True %}",
             delKey: "{% url 'passkeys:delKey' %}",
             toggle: "{% url 'passkeys:toggle' %}",
+            login: {
+                passkey: "{% url 'passkeys:login.passkey' %}",
+                otp: "{% url 'passkeys:login.otp' %}",
+            }
+            
         },
     }
+    let passwordInput = document.querySelector("#id_password");
+    if (passwordInput) {
+        passwordInput.required = false;
+    }
+    document.addEventListener("click", e => {
+        let element = e.target;
+        if (element.dataset.passkeyValue && element.dataset.passkeyValue) {
+            e.preventDefault();
+            let form = element.closest("form");
+            form.querySelector("#id_password").required = false;
+            form.querySelector("input[name='type']").value = element.dataset.passkeyValue;
+            form.action = passkeysConfig.urls.login[element.dataset.passkeyValue];
+            form.submit();
+        }
+    })
+    document.addEventListener("DOMContentLoaded", e => {
+        var otpInput = document.getElementById('id_otp');
+        console.log(otpInput);
+        if (otpInput) {
+            otpInput.addEventListener('keydown', stopCarret); 
+            otpInput.addEventListener('keyup', stopCarret); 
+        
+            function stopCarret() {
+                console.log(otpInput.value.length);
+                if (otpInput.value.length > 5){
+                    setCaretPosition(otpInput, 5);
+                }
+            }
+        
+            function setCaretPosition(elem, caretPos) {
+                if(elem != null) {
+                    if(elem.createTextRange) {
+                        var range = elem.createTextRange();
+                        range.move('character', caretPos);
+                        range.select();
+                    }
+                    else {
+                        if(elem.selectionStart) {
+                            elem.focus();
+                            elem.setSelectionRange(caretPos, caretPos);
+                        }
+                        else
+                            elem.focus();
+                    }
+                }
+            }
+        }
+    })
+    
+    
 </script>
 {% endblock %}
 {% block content %}

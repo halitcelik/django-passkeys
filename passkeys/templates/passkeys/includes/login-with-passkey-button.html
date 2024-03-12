@@ -1,0 +1,36 @@
+{% load i18n %}
+
+{% for option in login_options %}
+
+{% if option.value == "passkey" %}
+
+{% block endbodyscript %}
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const formElement = document.getElementById("loginForm");
+            const pkInput = formElement.querySelector("#passkeys");
+            if (window.location.protocol != 'https:') {
+                console.error("Passkeys must work under secure context");
+                return
+            }
+            if (!pkInput) {
+                console.error("Did you add the 'passkeys' hidden input field?");
+                return
+            }
+            else if (!formElement) {
+                console.error("Did you pass the correct form id to auth function?");
+                return
+            }
+            else {
+                djangoPasskey.initialize();
+            }
+        })
+    </script>
+{% endblock endbodyscript %}
+    
+    <p><input type="submit" data-passkey-value="{{option.value}}" value="{{option.text}}"></p>
+{% else %}
+    <p><input type="submit" data-passkey-value="{{option.value}}" value="{{option.text}}"></p>
+{% endif %}
+    
+{% endfor %}

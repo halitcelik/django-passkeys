@@ -2,34 +2,9 @@
 {% load i18n static %}
 
 {% block headtitle %}{% trans "Login" %}{{block.super}}{% endblock headtitle %}
-
-{% block head %}
-    <script>
-        window.passkeysConfig = {
-            crossPlatform: parseInt("{{request.session.passkey.cross_platform|default:0}}"),
-            enroll: "{{enroll}}",
-            urls: {
-                home: "{% url 'passkeys:home' %}",
-                authBegin: "{% url 'passkeys:auth_begin' %}",
-                regBegin: "{% url 'passkeys:reg_begin' %}",
-                regComplete: "{% url 'passkeys:reg_complete' %}",
-                enroll: `{% url 'passkeys:enroll' enroll=True %}`,
-                delKey: "{% url 'passkeys:delKey' %}",
-                toggle: "{% url 'passkeys:toggle' %}",
-            },
-        }
-    </script>
-    <script src="{% static 'passkeys/js/script.js'%}"></script>
-{% endblock head %}
-
 {% block content %}
 <main>
     <h1>{% trans "Login" %}</h1>
-    {% include "auth/includes/login-form.html" %}
-    
-    {% for option in login_options %}
-        {% include option.template %}
-    {% endfor %}
-        
+    {% include "passkeys/includes/login-form.html" %} 
 </main>
 {% endblock %}

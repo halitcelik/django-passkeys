@@ -1,32 +1,15 @@
-<form id="loginForm" hx-post="." method="post" action=".">
+<form id="loginForm" method="post" action=".">
     {% csrf_token %}
+    
+    {% if form.errors %}
+        {{form.non_field_errors}}
+    {% endif %}
+        
     {{form.as_p}}
     <input id="passkeys" type="hidden" name="passkeys" >
     <div class="buttons-grid grid">
         <input type="submit" class="action-button button"  value="{{ button_text }}" />
-    </div>
+    </div>    
+    {% include "passkeys/includes/login-with-passkey-button.html" %}
+    <input type="hidden" value="" name="type">
 </form>
-
-
-<script>
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const formElement = document.getElementById("loginForm");
-        const pkInput = formElement.querySelector("#passkeys");
-        if (window.location.protocol != 'https:') {
-            console.error("Passkeys must work under secure context");
-            return
-        }
-        if (!pkInput) {
-            console.error("Did you add the 'passkeys' hidden input field?");
-            return
-        }
-        else if (!formElement) {
-            console.error("Did you pass the correct form id to auth function?");
-            return
-        }
-        else {
-            djangoPasskey.initialize();
-        }
-    })
-</script>
