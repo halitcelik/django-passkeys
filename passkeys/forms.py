@@ -1,5 +1,3 @@
-import os
-
 from django import forms
 from django.contrib.auth import authenticate, get_user_model, login
 from django.utils.translation import gettext_lazy as _
@@ -51,9 +49,9 @@ class PasswordLoginForm(LoginOptionsForm):
 
 
 class OTPLoginForm(forms.Form):
-    otp = forms.CharField(label=_("OTP"), max_length=6, required=True)
-    email = forms.HiddenInput()
+    otp = forms.CharField(label=_("OTP"), max_length=6)
+    email = forms.EmailField(required=False, widget=forms.HiddenInput())
     next = forms.CharField(required=False, widget=forms.HiddenInput())
 
     class Meta:
-        fields = ("key", "email")
+        fields = ("otp", "email", "next")
