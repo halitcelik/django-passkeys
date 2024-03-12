@@ -9,7 +9,6 @@ urlpatterns = [
     path("reg/complete", FIDO2.reg_complete, name="reg_complete"),
     path("", views.index, name="home"),
     path("login/", views.login_options, name="login"),
-    path("login/password/", views.password_login, name="login.password"),
     path("login/passkey/", views.passkey_login, name="login.passkey"),
     path("login/otp/", views.otp_login, name="login.otp"),
     path("login/", views.login_options, name="login"),
