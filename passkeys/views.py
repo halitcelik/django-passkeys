@@ -93,7 +93,7 @@ def login_options(request):
 def passkey_login(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     if request.method == "POST":
-        if request.POST.get("passkey"):
+        if request.POST.get("passkeys"):
             user = auth_complete(request)
             if user:
                 login(
