@@ -75,6 +75,17 @@ def login_options(request):
             if passkeys.exists():
                 options.append({"value": "passkey", "text": "Login with passkey"})
             options.append({"value": "otp", "text": _("Receive email code")})
+        else:
+            form.add_error(
+                field=None,
+                error=ValidationError(
+                    mark_safe(
+                        f"""
+                        Email adresse or password wrong. No account yet?
+                        <a href='{reverse("auth.signup")}'>Signup</a>"""
+                    )
+                ),
+            )
 
     return render(
         request,
