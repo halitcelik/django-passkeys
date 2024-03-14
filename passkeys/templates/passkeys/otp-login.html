@@ -4,7 +4,7 @@
 {% block content %}
 <main>
     <h1>{% trans "Login" %}</h1>
-    <form id="loginForm" hx-post="." method="post" action=".">
+    <form id="loginForm" method="post" action=".">
         {% csrf_token %}
         {{form.as_p}}
         <div class="buttons-grid grid">
