@@ -16,8 +16,8 @@
         <input id="passkeys" type="hidden" name="passkeys" >
         <div class="buttons-grid grid">
             <input type="submit" class="action-button button"  value="{{ button_text }}" />
+            {% include "passkeys/includes/login-with-passkey-button.html" %}
+            <input type="hidden" value="" name="type">
         </div>    
-        {% include "passkeys/includes/login-with-passkey-button.html" %}
-        <input type="hidden" value="" name="type">
     </form>
 </div>
