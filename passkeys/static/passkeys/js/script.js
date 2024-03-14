@@ -41,6 +41,7 @@
 
         pk_input.value = JSON.stringify(credToJSON(assertion));
         let form = document.getElementById("loginForm")
+        form.action = window.passkeysConfig.urls.login.passkey;
         if (form === null || form === undefined) {
             console.error("Did you pass the correct form id to auth function")
             return;
