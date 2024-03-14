@@ -75,17 +75,25 @@ def login_options(request):
             if passkeys.exists():
                 options.append({"value": "passkey", "text": "Login with passkey"})
             options.append({"value": "otp", "text": _("Receive email code")})
-        else:
-            form.add_error(
-                field=None,
-                error=ValidationError(
-                    mark_safe(
-                        f"""
-                        Email adresse or password wrong. No account yet?
-                        <a href='{reverse("auth.signup")}'>Signup</a>"""
-                    )
-                ),
-            )
+        elif request.POST.get("password"):
+            # User does not exist but they tried to login with password.
+            # We need to try to validate the form to be able to add error to it.
+            # Validating falls into PasskeyBackendException, we catch it.
+            try:
+                form = PasswordLoginForm(request.POST)
+                form.is_valid()
+
+            except PasskeyBackendException:
+                form.add_error(
+                    field=None,
+                    error=ValidationError(
+                        mark_safe(
+                            f"""
+                            Email adresse or password wrong. No account yet?
+                            <a href='{reverse("auth.signup")}'>Signup</a>"""
+                        )
+                    ),
+                )
 
     return render(
         request,

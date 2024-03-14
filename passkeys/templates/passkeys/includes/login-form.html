@@ -1,15 +1,23 @@
-<form id="loginForm" method="post" action=".">
-    {% csrf_token %}
-    
-    {% if form.errors %}
-        {{form.non_field_errors}}
-    {% endif %}
+<div class="login-container">
+    <form class="login-form" id="loginForm" method="post" action=".">
+        {% csrf_token %}
         
-    {{form.as_p}}
-    <input id="passkeys" type="hidden" name="passkeys" >
-    <div class="buttons-grid grid">
-        <input type="submit" class="action-button button"  value="{{ button_text }}" />
-    </div>    
-    {% include "passkeys/includes/login-with-passkey-button.html" %}
-    <input type="hidden" value="" name="type">
-</form>
+        {% if form.non_field_errors %}
+            <ul>
+                {% for error in form.non_field_errors %}
+                    <li class="error-message">{{error}}</li>
+                {% endfor %}
+            </ul>
+                
+            {{form.non_field_errors}}
+        {% endif %}
+            
+        {{form.as_p}}
+        <input id="passkeys" type="hidden" name="passkeys" >
+        <div class="buttons-grid grid">
+            <input type="submit" class="action-button button"  value="{{ button_text }}" />
+        </div>    
+        {% include "passkeys/includes/login-with-passkey-button.html" %}
+        <input type="hidden" value="" name="type">
+    </form>
+</div>
