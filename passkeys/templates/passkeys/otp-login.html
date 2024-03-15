@@ -7,9 +7,20 @@
     <form id="login-form" method="post" action=".">
         {% csrf_token %}
         {{form.as_p}}
+        
+        {% if not otp_invalid %}            
+        <div class="otp-field">
+            <input type="text" maxlength="1" required />
+            <input type="text" maxlength="1" required />
+            <input class="space" type="text" maxlength="1" required />
+            <input type="text" maxlength="1" required />
+            <input type="text" maxlength="1" required />
+            <input type="text" maxlength="1" required />
+        </div>
         <div class="buttons-grid grid">
             <input type="submit" class="action-button button"  value="{{ button_text }}" />
         </div>
+        {% endif %}
     </form>
         {% for option in login_options %}
         {% include option.template %}

@@ -132,6 +132,7 @@ def passkey_login(request):
 def otp_login(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Verify")
+    otp_invalid = False
     if request.method == "POST":
         form = LoginOptionsForm(request.POST)
         email = request.POST.get("email")
@@ -163,8 +164,9 @@ def otp_login(request):
                             request.GET.get("next", form.cleaned_data.get("next", "/"))
                         )
                     else:
+                        otp_invalid = True
                         form.add_error(
-                            None,
+                            "otp",
                             _(
                                 "Your OTP code is either expired or invalid. Ask a new one."
                             ),
@@ -183,7 +185,12 @@ def otp_login(request):
         return render(
             request,
             "passkeys/otp-login.html",
-            {"form": form, "next": next_, "button_text": button_text},
+            {
+                "form": form,
+                "next": next_,
+                "otp_invalid": otp_invalid,
+                "button_text": button_text,
+            },
         )
 
 

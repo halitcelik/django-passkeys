@@ -1,84 +1,68 @@
 
-.login-container {
+.login .form-row input {
+  padding: 8px;
+  padding-right: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.login .submit-row {
+  display: flex;
+  flex-direction: column;
+}
+  
+#id_otp {
+    padding-left: 15px;
+    letter-spacing: 42px;
+    border: 0;
+    background-image: linear-gradient(to left, black 70%, rgba(255, 255, 255, 0) 0%);
+    background-position: bottom;
+    background-position-x: center;
+    background-size: 50px 1px;
+    background-repeat: repeat-x;
+    background-position-x: 35px;
+    width: 270px;
+    outline: none;
+}
+  
+.buttons-grid > input + input {
+    margin-top: 1rem;
+  }
+  
+  
+.buttons-grid > script + input {
+    margin-top: 1rem;
+  }
+
+
+
+/*OTP*/ 
+
+
+  .otp-field {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
   }
-  
-  .login-form {
-    background-color: #fff;
-    border: 1px solid #ddd;
+  .otp-field input {
+    width: 24px;
+    font-size: 32px;
+    padding: 10px;
+    text-align: center;
     border-radius: 5px;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    min-width: 320px;
-  }
-  .login-form label {
-    display: block;
-    line-height: 2em;
-  }
-  
-  
-  .login-header {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  
-  .login-form input[type="email"],
-  .login-form input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    width: calc(100% - 20px);
-  }
-  
-  .login-form input[type="submit"] {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
+    margin: 2px;
+    border: 2px solid #55525c;
+    background: #21232d;
+    font-weight: bold;
     color: #fff;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
+    outline: none;
+    transition: all 0.1s;
   }
-  
-  .login-form input[type="submit"]:hover {
-    background-color: #0056b3;
+  .otp-field input:focus {
+    border: 2px solid #a527ff;
+    box-shadow: 0 0 2px 2px #a527ff6a;
   }
-  
-  .error-message {
-    color: #dc3545;
-    font-size: 14px;
+  .disabled {
+    opacity: 0.5;
   }
-  
-  .login-footer {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 12px;
-  }
-  
-  #id_otp {
-      padding-left: 15px;
-      letter-spacing: 42px;
-      border: 0;
-      background-image: linear-gradient(to left, black 70%, rgba(255, 255, 255, 0) 0%);
-      background-position: bottom;
-      background-position-x: center;
-      background-size: 50px 1px;
-      background-repeat: repeat-x;
-      background-position-x: 35px;
-      width: 270px;
-      outline: none;
-  }
-  
-  .buttons-grid > input + input {
-    margin-top: 1rem;
-  }
-  
-  
-  .buttons-grid > script + input {
-    margin-top: 1rem;
+  .space {
+    margin-right: 1rem !important;
   }
