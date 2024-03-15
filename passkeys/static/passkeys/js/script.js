@@ -235,23 +235,20 @@ function displayPasskeyOption() {
 
 
 displayPasskeyOption();
-
-
-const form = document.querySelector("login-form");
-
+const form = document.getElementById("login-form");
 const inputs = document.querySelectorAll(".otp-field input");
-inputs.forEach((input, index) => {
-    input.dataset.index = index;
-    input.addEventListener("keyup", handleOtp);
-    input.addEventListener("paste", handleOnPasteOtp);
-});
 
-form.addEventListener("submit", e => {
-    e.preventDefault();
-    if (addValueToForm()) {
-        form.submit()
-    }
-})
+function handleOTPLogin() {
+    inputs.forEach((input, index) => {
+        input.dataset.index = index;
+        input.addEventListener("keyup", handleOtp);
+        input.addEventListener("paste", handleOnPasteOtp);
+        input.addEventListener("focus", e => {
+            console.log("focused ", e)
+        })
+    });
+}
+
 function handleOtp(e) {
     /**
      * <input type="text" 👉 maxlength="1" />
@@ -267,7 +264,7 @@ function handleOtp(e) {
     if (fieldIndex < inputs.length - 1 && isValidInput) {
         input.nextElementSibling.focus();
     }
-    if (e.key === "Backspace" || "Delete" && fieldIndex > 0) {
+    if (e.key === "Backspace" || e.key === "Delete" && fieldIndex > 0) {
         input.previousElementSibling.focus();
     }
     if (fieldIndex == inputs.length - 1 && isValidInput) {
@@ -293,8 +290,9 @@ function addValueToForm() {
     });
     if (otp.length === 6) {
         form.querySelector("#id_otp").value = otp;
-        return true
+        form.submit()
     }
-    return false
 }
+
+handleOTPLogin();
 

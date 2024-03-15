@@ -64,9 +64,7 @@ def login_options(request):
                         field=None,
                         error=ValidationError(
                             mark_safe(
-                                f"""
-                                Email adresse or password wrong. No account yet?
-                                <a href='{reverse("auth.signup")}'>Signup</a>"""
+                                f"Email adresse or password wrong. No account yet?"
                             )
                         ),
                     )
@@ -87,11 +85,7 @@ def login_options(request):
                 form.add_error(
                     field=None,
                     error=ValidationError(
-                        mark_safe(
-                            f"""
-                            Email adresse or password wrong. No account yet?
-                            <a href='{reverse("auth.signup")}'>Signup</a>"""
-                        )
+                        mark_safe("Email adresse or password wrong. No account yet?")
                     ),
                 )
 
