@@ -7,7 +7,7 @@
 {% block endbodyscript %}
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const formElement = document.getElementById("loginForm");
+            const formElement = document.getElementById("login-form");
             const pkInput = formElement.querySelector("#passkeys");
             if (window.location.protocol != 'https:') {
                 console.error("Passkeys must work under secure context");
@@ -27,7 +27,6 @@
         })
     </script>
 {% endblock endbodyscript %}
-    
     <input type="submit" data-passkey-value="{{option.value}}" value="{{option.text}}">
 {% else %}
     <input type="submit" data-passkey-value="{{option.value}}" value="{{option.text}}">

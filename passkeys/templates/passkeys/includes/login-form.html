@@ -1,23 +1,53 @@
-<div class="login-container">
-    <form class="login-form" id="loginForm" method="post" action=".">
-        {% csrf_token %}
-        
-        {% if form.non_field_errors %}
-            <ul>
-                {% for error in form.non_field_errors %}
-                    <li class="error-message">{{error}}</li>
-                {% endfor %}
-            </ul>
-                
-            {{form.non_field_errors}}
-        {% endif %}
-            
-        {{form.as_p}}
-        <input id="passkeys" type="hidden" name="passkeys" >
-        <div class="buttons-grid grid">
-            <input type="submit" class="action-button button"  value="{{ button_text }}" />
-            {% include "passkeys/includes/login-with-passkey-button.html" %}
-            <input type="hidden" value="" name="type">
-        </div>    
-    </form>
+<div id="container"> <!-- Header -->
+    <div id="header">
+        <div id="branding">
+
+            <h1 id="site-name"><a href="/en/admin/">Log in</a></h1>
+        </div>
+    </div>
+    <!-- END Header -->
+    <div class="main" id="main">
+        <div id="content-start" class="content" tabindex="-1">
+            <!-- Content -->
+            <div id="content" class="colM">
+                {% if form.non_field_errors %}
+                <p class="errornote">
+                    {{form.non_field_errors}}
+                </p>
+                {% endif %}
+                <div id="content-main">
+                    <form class="login-form" id="login-form" method="post" action=".">
+                       {% csrf_token %}
+                        <div class="form-row">
+
+                        </div>
+                        <div class="form-row">
+                            {% if form.username %}
+                                {{ form.username.errors }}
+                                {{ form.username.label_tag }} {{ form.username }}
+                            {% elif form.email %}
+                                {{ form.email.errors }}
+                                {{ form.email.label_tag }} {{form.email}}
+                            {% endif %}
+
+                        </div>
+                        <div class="form-row">
+                            {{ form.password.errors }}
+                            {{ form.password.label_tag }} {{ form.password }}
+                            <input type="hidden" name="next" value="{{ next }}">
+                        </div>
+                        <div class="submit-row">
+                            <input type="submit" value="Log in">
+                            <input id="passkeys" type="hidden" name="passkeys">
+                            {% include "passkeys/includes/login-options.html" %}
+                            <input type="hidden" value="" name="type">
+                        </div>
+                    </form>
+
+                </div> <br class="clear">
+            </div>
+            <!-- END Content -->
+            <div id="footer"></div>
+        </div>
+    </div>
 </div>

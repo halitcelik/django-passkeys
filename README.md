@@ -74,11 +74,11 @@ Currently, it support Django 2.0+, Python 3.7+
     ```
 
 8. Finally, In your `login.html`
-   * Give an id to your login form e.g 'loginForm', the id should be provided when calling `authn` function
+   * Give an id to your login form e.g 'login-form', the id should be provided when calling `authn` function
    * Inside the form, add 
      ```html
       <input type="hidden" name="passkeys" id="passkeys"/>
-      <button class="btn btn-block btn-dark" type="button" onclick="authn('loginForm')"><img src="{% static 'passkeys/imgs/FIDO-Passkey_Icon-White.png' %}" style="width: 24px"></button>
+      <button class="btn btn-block btn-dark" type="button" onclick="authn('login-form')"><img src="{% static 'passkeys/imgs/FIDO-Passkey_Icon-White.png' %}" style="width: 24px"></button>
      {%include 'passkeys.js' %}
      ```
 For Example, See 'example' app and look at EXAMPLE.md to see how to set it up.
@@ -132,9 +132,9 @@ Starting version v1.2. you can use Conditional UI by adding the following to you
 add the following to the page js.
 
 ```js
-window.onload = checkConditionalUI('loginForm');
+window.onload = checkConditionalUI('login-form');
 ```
-where `loginForm` is name of your login form.
+where `login-form` is name of your login form.
 
 ## Security contact information
 

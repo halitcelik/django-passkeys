@@ -2,9 +2,13 @@
 {% load i18n static %}
 
 {% block headtitle %}{% trans "Login" %}{{block.super}}{% endblock headtitle %}
+
+{% block head %}
+{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/login.css" %}">
+{% endblock head %}
+    
 {% block content %}
 <main>
-    <h1>{% trans "Login" %}</h1>
     {% include "passkeys/includes/login-form.html" %} 
 </main>
 {% endblock %}
