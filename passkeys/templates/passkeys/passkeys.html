@@ -56,8 +56,8 @@
                         <td class="field-last_used">{% if key.last_used %}{{ key.last_used }}{% else %}Never{% endif %}</td>
                         <td class="field-status"><input type="checkbox" id="toggle_{{ key.id }}" {% if key.enabled %}checked{% endif %} data-onstyle="success" data-offstyle="danger" onchange="toggleKey({{ key.id }})"
                                 data-toggle="toggle" class="status_chk"></td>
-                        <td class="field-impersonate">
-                            <a href="javascript:void(0)" onclick="deleteKey({{ key.id }},'{{ key.key_type }}')"
+                        <td class="field-delete">
+                            <a href="javascript:void(0)" onclick="djangoPasskey.deleteKey({{ key.id }})"
                                 class="deletelink">Delete
                             </a>
                         </td>

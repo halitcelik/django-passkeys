@@ -149,7 +149,7 @@
             });
     };
 
-    function confirmDel(id) {
+    function deleteKey(id) {
         fetch(window.passkeysConfig.urls.delKey, {
             method: 'POST',
             headers: {
@@ -160,7 +160,7 @@
             .then(response => response.text())
             .then(data => {
                 alert(data);
-                window.location = window.passkeysConfig.urls.home;
+                window.location.href = window.passkeysConfig.urls.home;
             })
             .catch(error => {
                 console.error('Error confirming deletion:', error);
@@ -196,7 +196,7 @@
 
     window.djangoPasskey = {
         startRegistration: startRegistration,
-
+        deleteKey: deleteKey,
         beginReg: beginReg,
         initialize: initialize
     };
@@ -227,7 +227,11 @@ function displayPasskeyOption() {
             PublicKeyCredential.isConditionalMediationAvailable(),
         ]).then(results => {
             if (results.every(r => r === true)) {
-
+                document.querySelectorAll("[type='submit]'").forEach(button => {
+                    if (button.dataset.passkeyValue == "passkey") {
+                        button.style.display = "none";
+                    }
+                })
             }
         });
     }
