@@ -139,7 +139,7 @@
             })
             .then(res => {
                 if (res["status"] == 'OK') {
-                    document.querySelector("#res").insertAdjacentHTML("afterbegin", `<div class='alert alert-success'>Registered Successfully, <a href='${window.passkeysConfig.homeURL}'> Refresh</a></div>`);
+                    window.location.href = window.passkeysConfig.urls.home;
                 } else {
                     document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>Registration Failed as " + res + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
                 }
@@ -296,3 +296,8 @@ function addValueToForm() {
 
 handleOTPLogin();
 
+document.addEventListener("submit", e => {
+    if (e.target.id == "registration-form") {
+        e.preventDefault();
+    }
+})
