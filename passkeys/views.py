@@ -1,3 +1,4 @@
+import json
 import datetime
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
@@ -189,7 +190,7 @@ def otp_login(request):
 
 
 @login_required
-def index(request, enroll=False):  # noqa
+def index(request):  # noqa
     keys = UserPasskey.objects.filter(user=request.user)  # pragma: no cover
     return render(
         request, "passkeys/passkeys.html", {"keys": keys, "enroll": enroll}
@@ -198,7 +199,15 @@ def index(request, enroll=False):  # noqa
 
 @login_required
 def del_key(request):
-    key = UserPasskey.objects.get(id=request.GET["id"])
+    data = json.loads(request.body)
+    key = UserPasskey.objects.filter(id=data.get("id"))
+    if key.exists():
+        key = key.first()
+    else:
+        return HttpResponse(
+            "Error: You don't own this token so you can't delete it", status=403
+        )
+
     if key.user.pk == request.user.pk:
         key.delete()
         return HttpResponse("Deleted Successfully")

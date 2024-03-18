@@ -301,7 +301,7 @@ function addValueToForm() {
 handleOTPLogin();
 
 document.addEventListener("submit", e => {
-    if (e.target.id == "registration-form") {
+    if (e.target.id == "passkeys-registration-form") {
         e.preventDefault();
     }
 })
