@@ -193,7 +193,7 @@ def otp_login(request):
 def index(request):  # noqa
     keys = UserPasskey.objects.filter(user=request.user)  # pragma: no cover
     return render(
-        request, "passkeys/passkeys.html", {"keys": keys, "enroll": enroll}
+        request, "passkeys/passkeys.html", {"keys": keys}
     )  # pragma: no cover
 
 

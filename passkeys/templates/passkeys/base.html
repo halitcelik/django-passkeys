@@ -10,7 +10,6 @@
 <script>
     window.passkeysConfig = {
         crossPlatform: "{{request.session.passkey.cross_platform|default:0}}",
-        enroll: "{{enroll}}",
         urls: {
             home: "{% url 'passkeys:home' %}",
             authBegin: "{% url 'passkeys:auth_begin' %}",
