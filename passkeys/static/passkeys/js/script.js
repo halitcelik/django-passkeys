@@ -153,7 +153,8 @@
         fetch(window.passkeysConfig.urls.delKey, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
             },
             body: JSON.stringify({ id: id })
         })
@@ -166,6 +167,21 @@
                 console.error('Error confirming deletion:', error);
             });
     }
+
+
+    function toggleKey(id) {
+        fetch(window.passkeysConfig.urls.toggle, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ id: id })
+        }).catch(error => {
+            console.error('Error confirming deletion:', error);
+        });
+    }
+
 
     function startRegistration() {
         const modalTitle = document.querySelector("#modal-title");
@@ -305,3 +321,19 @@ document.addEventListener("submit", e => {
         e.preventDefault();
     }
 })
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}

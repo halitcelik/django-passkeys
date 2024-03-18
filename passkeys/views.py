@@ -218,10 +218,10 @@ def del_key(request):
 
 @login_required
 def toggle_key(request):
-    id = request.GET["id"]
-    q = UserPasskey.objects.filter(user=request.user, id=id)
-    if q.count() == 1:
-        key = q[0]
+    data = json.loads(request.body)
+    key = UserPasskey.objects.filter(id=data.get("id"))
+    if key.exists():
+        key = key.first()
         key.enabled = not key.enabled
         key.save()
         return HttpResponse("OK")
