@@ -7,13 +7,11 @@
 {% endblock %}
 {% block content %}
 {{block.super}}
-<br />
-<br />
 <div id="content" class="colM">
     <div class="results">
         <ul class="object-tools">
             <li>
-                <a href="" class="addlink">
+                <a href="{% url 'passkeys:add' %}" class="addlink">
                     Add Key
                 </a>
             </li>

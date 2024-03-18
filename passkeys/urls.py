@@ -12,7 +12,7 @@ urlpatterns = [
     path("login/passkey/", views.passkey_login, name="login.passkey"),
     path("login/otp/", views.otp_login, name="login.otp"),
     path("login/", views.login_options, name="login"),
-    path("enroll/", views.index, name="enroll", kwargs={"enroll": True}),
+    path("add/", views.add, name="add"),
     path("del/", views.del_key, name="delKey"),
     path("toggle/", views.toggle_key, name="toggle"),
 ]

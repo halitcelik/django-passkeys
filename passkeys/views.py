@@ -219,3 +219,8 @@ def toggle_key(request):
     return HttpResponse(
         "Error: You don't own this token so you can't toggle it", status=403
     )
+
+
+@login_required
+def add(request):
+    return render(request, "passkeys/add.html")

@@ -41,38 +41,6 @@
             form.submit();
         }
     })
-    document.addEventListener("DOMContentLoaded", e => {
-        var otpInput = document.getElementById('id_otp');
-        if (otpInput) {
-            otpInput.addEventListener('keydown', stopCarret); 
-            otpInput.addEventListener('keyup', stopCarret); 
-        
-            function stopCarret() {
-                console.log(otpInput.value.length);
-                if (otpInput.value.length > 5){
-                    setCaretPosition(otpInput, 5);
-                }
-            }
-        
-            function setCaretPosition(elem, caretPos) {
-                if(elem != null) {
-                    if(elem.createTextRange) {
-                        var range = elem.createTextRange();
-                        range.move('character', caretPos);
-                        range.select();
-                    }
-                    else {
-                        if(elem.selectionStart) {
-                            elem.focus();
-                            elem.setSelectionRange(caretPos, caretPos);
-                        }
-                        else
-                            elem.focus();
-                    }
-                }
-            }
-        }
-    })
     
     
 </script>
