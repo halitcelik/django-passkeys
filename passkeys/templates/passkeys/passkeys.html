@@ -49,12 +49,12 @@
                 {% for key in keys %}
                     <tr>
                         <td class="field-name">
-                            <a href="/en/admin/users/user/1/change/">{{ key.name }}</a>
+                            {{ key.name }}
                         </td>
                         <th class="field-email">{{ key.added_on }}</th>
                         <td class="field-platform">{{ key.platform }}</td>
                         <td class="field-last_used">{% if key.last_used %}{{ key.last_used }}{% else %}Never{% endif %}</td>
-                        <td class="field-status"><input type="checkbox" id="toggle_{{ key.id }}" {% if key.enabled %}checked{% endif %} data-onstyle="success" data-offstyle="danger" onchange="toggleKey({{ key.id }})"
+                        <td class="field-status"><input type="checkbox" id="toggle_{{ key.id }}" {% if key.enabled %}checked{% endif %} data-onstyle="success" data-offstyle="danger" onchange="djangoPasskey.toggleKey({{ key.id }})"
                                 data-toggle="toggle" class="status_chk"></td>
                         <td class="field-delete">
                             <a href="javascript:void(0)" onclick="djangoPasskey.deleteKey({{ key.id }})"

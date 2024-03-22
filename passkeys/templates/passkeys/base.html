@@ -8,22 +8,7 @@
 {% block endbodyscript %}
 {{ block.super }}
 <script>
-    window.passkeysConfig = {
-        crossPlatform: "{{request.session.passkey.cross_platform|default:0}}",
-        urls: {
-            home: "{% url 'passkeys:home' %}",
-            authBegin: "{% url 'passkeys:auth_begin' %}",
-            regBegin: "{% url 'passkeys:reg_begin' %}",
-            regComplete: "{% url 'passkeys:reg_complete' %}",
-            delKey: "{% url 'passkeys:delKey' %}",
-            toggle: "{% url 'passkeys:toggle' %}",
-            login: {
-                passkey: "{% url 'passkeys:login.passkey' %}",
-                otp: "{% url 'passkeys:login.otp' %}",
-            }
-            
-        },
-    }
+    window.passkeysConfig = 
     let passwordInput = document.querySelector("#id_password");
     if (passwordInput) {
         passwordInput.required = false;
@@ -42,7 +27,7 @@
     
     
 </script>
-<script src="{% static 'passkeys/js/script.js'%}"></script>
+<script src="{% static 'passkeys/js/script.js'%}" type="module"></script>
 {% endblock %}
 {% block content %}
 {{ block.super }}

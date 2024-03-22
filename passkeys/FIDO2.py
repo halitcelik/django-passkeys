@@ -144,7 +144,11 @@ def auth_begin(request):
         credentials = get_user_credentials(username)
     auth_data, state = server.authenticate_begin(credentials)
     request.session["fido2_state"] = state
-    return JsonResponse(dict(auth_data))
+    res = dict(auth_data)
+    res["publicKey"]["userVerification"] = "preferred"
+    res["publicKey"]["timeout"] = 12000
+    print(res)
+    return JsonResponse(res)
 
 
 @csrf_exempt

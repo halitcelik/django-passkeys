@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.timezone import now as utc_now
+from django.http import JsonResponse
 
 from .models import UserPasskey, OTP
 from django.utils.translation import gettext_lazy as _
@@ -192,9 +193,7 @@ def otp_login(request):
 @login_required
 def index(request):  # noqa
     keys = UserPasskey.objects.filter(user=request.user)  # pragma: no cover
-    return render(
-        request, "passkeys/passkeys.html", {"keys": keys}
-    )  # pragma: no cover
+    return render(request, "passkeys/passkeys.html", {"keys": keys})  # pragma: no cover
 
 
 @login_required
@@ -233,3 +232,23 @@ def toggle_key(request):
 @login_required
 def add(request):
     return render(request, "passkeys/add.html")
+
+
+def settings(request):
+    return JsonResponse(
+        {
+            "crossPlatform": request.session.passkey.cross_platform or 0,
+            "urls": {
+                "home": reverse("passkeys:home"),
+                "authBegin": reverse("passkeys:auth_begin"),
+                "regBegin": reverse("passkeys:reg_begin"),
+                "regComplete": reverse("passkeys:reg_complete"),
+                "delKey": reverse("passkeys:delKey"),
+                "toggle": reverse("passkeys:toggle"),
+                "login": {
+                    "passkey": reverse("passkeys:login.passkey"),
+                    "otp": reverse("passkeys:login.otp"),
+                },
+            },
+        }
+    )
