@@ -27,8 +27,11 @@
     
     
 </script>
-<script src="{% static 'passkeys/js/script.js'%}" type="module"></script>
+<script src="{% static 'passkeys/js/passkey-login.js'%}" type="module"></script>
 {% endblock %}
 {% block content %}
 {{ block.super }}
+<passkey-login
+    login-url='{% url "passkeys:login" %}'>
+</passkey-login>
 {% endblock %}
