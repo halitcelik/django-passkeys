@@ -14,5 +14,20 @@
 {% block content %}
 <main>
     {% include "passkeys/includes/login-form.html" %} 
+
+<passkey-login
+crossplatform="{{request.session.passkey.cross_platform|default:0}}"
+loginurl='{% url "passkeys:login" %}'
+homeurl="{% url 'passkeys:home' %}",
+authbeginurl="{% url 'passkeys:auth_begin' %}"
+regbeginurl="{% url 'passkeys:reg_begin' %}"
+regcompleteurl="{% url 'passkeys:reg_complete' %}"
+delkeyurl="{% url 'passkeys:delKey' %}"
+toggleurl="{% url 'passkeys:toggle' %}"
+passkeyloginurl="{% url 'passkeys:login.passkey' %}"
+otploginurl="{% url 'passkeys:login.otp' %}"
+csrf={{csrf_token}}
+styleurls='{% static "passkeys/css/styles.css" %} {% static "admin/css/login.css" %} {% static "admin/css/base.css" %}'>
+</passkey-login>
 </main>
 {% endblock %}
