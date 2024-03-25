@@ -33,7 +33,7 @@ export default element(
         <div class="form-row">
         </div>
         <div class="form-row">
-            <label for="id_email">Your email adress:</label> <protonpass-root-da79 data-protonpass-role="icon"></protonpass-root-da79><input type="email" name="email" value="halit@cruncher.ch" autofocus="" autocomplete="username webauthn" maxlength="320" required="" id="id_email" style="padding-right: 35.3333px !important;" data-protonpass-base-css="{&quot;padding-right&quot;:&quot;&quot;}">
+            <label for="id_email">Your email adress:</label> <input type="email" name="email" value="" autofocus="" autocomplete="username webauthn" maxlength="320" required="" id="id_email">
         </div>
         <div class="form-row"> 
             <label for="id_password">Password:</label> <input type="password" name="password" id="id_password">
@@ -53,7 +53,16 @@ export default element(
         const form = shadow.querySelector("#login-form");
         const submitButtons = shadow.querySelectorAll("input[type='submit']");
         const passkeyInput = shadow.querySelector("#passkeys");
-
+        internals.urls = {
+            base: internals.baseurl,
+            authBegin: `${internals.baseurl}/auth-begin`,
+            regBegin: `${internals.baseurl}/reg-begin`,
+            regComplete: `${internals.baseurl}/reg-complete`,
+            delKey: `${internals.baseurl}/del-key`,
+            toggleKey: `${internals.baseurl}/toggle-key`,
+            passkeyLogin: `${internals.baseurl}/passkey-login`,
+            otpLogin: `${internals.baseurl}/otp-login`,
+        }
         /* Prevend default submission and modify action attribute */
         form.addEventListener("click", e => {
             let element = e.target;
@@ -62,7 +71,7 @@ export default element(
                 let form = element.closest("form");
                 form.querySelector("#id_password").required = false;
                 form.querySelector("input[name='type']").value = element.dataset.passkeyValue;
-                form.action = passkeysConfig.urls.login[element.dataset.passkeyValue];
+                form.action = internals.urls[`${element.dataset.passkeyValue}Login`];
                 form.submit();
             }
         })
@@ -91,58 +100,10 @@ export default element(
             internals.crossplatform = parseInt(value);
         }
     },
-    loginurl: {
+    baseurl: {
         attribute: function (url) {
             const internals = getInternals(this);
-            internals.loginurl = url;
-        }
-    },
-    homeurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.homeurl = url;
-        }
-    },
-    authbeginurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.authbeginurl = url;
-        }
-    },
-    regbeginurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.regbeginurl = url;
-        }
-    },
-    regcompleteurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.regcompleteurl = url;
-        }
-    },
-    delkeyurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.delkeyurl = url;
-        }
-    },
-    toggleurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.toggleurl = url;
-        }
-    },
-    passkeyloginurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.passkeyloginurl = url;
-        }
-    },
-    otploginurl: {
-        attribute: function (url) {
-            const internals = getInternals(this);
-            internals.otploginurl = url;
+            internals.baseurl = url;
         }
     },
     csrf: {
