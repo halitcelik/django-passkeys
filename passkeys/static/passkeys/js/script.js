@@ -161,6 +161,9 @@
             })
             .catch(error => {
                 console.error("Error occurred during authentication:", error);
+                Array.from(document.querySelectorAll("input[type='submit']")).forEach(input => {
+                    input.disabled = false;
+                })
             });
     }
 
@@ -271,12 +274,18 @@
 
 
     function initialize() {
+        Array.from(document.querySelectorAll("input[type='submit']")).forEach(input => {
+            input.disabled = true;
+        })
         getServerCredentials()
             .then(data => {
                 startAuthentication(data.publicKey);
             })
             .catch(error => {
                 console.error('Error during login:', error);
+                Array.from(document.querySelectorAll("input[type='submit']")).forEach(input => {
+                    input.disabled = false;
+                })
             });
     }
 
