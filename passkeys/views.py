@@ -73,6 +73,7 @@ def login_options(request):
 
             passkeys = UserPasskey.objects.filter(user=user.first())
             if passkeys.exists():
+                request.session["base_username"] = username
                 options.append({"value": "passkey", "text": "Login with passkey"})
             options.append({"value": "otp", "text": _("Receive email code")})
         elif request.POST.get("password"):
@@ -232,23 +233,3 @@ def toggle_key(request):
 @login_required
 def add(request):
     return render(request, "passkeys/add.html")
-
-
-def settings(request):
-    return JsonResponse(
-        {
-            "crossPlatform": request.session.passkey.cross_platform or 0,
-            "urls": {
-                "home": reverse("passkeys:home"),
-                "authBegin": reverse("passkeys:auth_begin"),
-                "regBegin": reverse("passkeys:reg_begin"),
-                "regComplete": reverse("passkeys:reg_complete"),
-                "delKey": reverse("passkeys:delKey"),
-                "toggle": reverse("passkeys:toggle"),
-                "login": {
-                    "passkey": reverse("passkeys:login.passkey"),
-                    "otp": reverse("passkeys:login.otp"),
-                },
-            },
-        }
-    )

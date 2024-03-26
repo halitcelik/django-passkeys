@@ -1,4 +1,52 @@
 (function () {
+    function base64URLStringToBuffer(base64URLString) {
+        if (typeof base64URLString === "undefined") {
+            return
+        }
+        // Convert from Base64URL to Base64
+        const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
+        /**
+         * Pad with '=' until it's a multiple of four
+         * (4 - (85 % 4 = 1) = 3) % 4 = 3 padding
+         * (4 - (86 % 4 = 2) = 2) % 4 = 2 padding
+         * (4 - (87 % 4 = 3) = 1) % 4 = 1 padding
+         * (4 - (88 % 4 = 0) = 4) % 4 = 0 padding
+         */
+        const padLength = (4 - (base64.length % 4)) % 4;
+        const padded = base64.padEnd(base64.length + padLength, '=');
+
+        // Convert to a binary string
+        const binary = atob(padded);
+
+        // Convert binary string to buffer
+        const buffer = new ArrayBuffer(binary.length);
+        const bytes = new Uint8Array(buffer);
+
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+
+        return buffer;
+    }
+
+    function bufferToBase64URLString(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let str = '';
+
+        for (const charCode of bytes) {
+            str += String.fromCharCode(charCode);
+        }
+
+        const base64String = btoa(str);
+
+        return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    function bufferToUTF8String(value) {
+        return new TextDecoder('utf-8').decode(value);
+    }
+
+
     const base64urlEncode = (array) => {
         let arrayBuf = array
         if (typeof array === "object") {
@@ -9,80 +57,29 @@
         return btoa(binString).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
     };
 
-    const base64urlDecode = (base64) => {
-        const padding = "====".substring(base64.length % 4);
-        const binString = atob(base64.replaceAll("-", "+").replaceAll("_", "/") + (padding.length < 4 ? padding : ""));
-        return Uint8Array.from(binString, (m) => m.codePointAt(0));
-    };
-
-    function arrayToBuffer(array) {
-        /*Sometimes it is already an ArrayBuffer*/
-        if (array.buffer) {
-            return array.buffer.slice(array.byteOffset, array.byteLength + array.byteOffset)
-        }
-        return array
-    }
-
-    function assertFunc(assertion) {
-        pk_input = document.getElementById("passkeys");
-        if (pk_input.length == 0) {
-            console.error("Did you add the 'passkey' hidden input field")
+    function handleForm(jsonData) {
+        const pkInput = document.getElementById("passkeys");
+        if (!pkInput) {
+            console.error("Did you add the 'passkeys' hidden input field");
             return
         }
-        if (assertion.rawId) {
-            assertion.rawId = arrayToBuffer(assertion.rawId);
-        }
-        for (let key in assertion.response) {
-            /*Careful about null values. On PC worked fine but on the android got null value */
-            if (!Object.is(assertion.response[key], null)) {
-                assertion.response[key] = arrayToBuffer(assertion.response[key])
-            }
-        }
 
-        pk_input.value = JSON.stringify(credToJSON(assertion));
-        let form = document.getElementById("login-form")
+
+        pkInput.value = JSON.stringify(jsonData);
+        let form = document.getElementById("login-form");
         form.action = window.passkeysConfig.urls.login.passkey;
         if (form === null || form === undefined) {
-            console.error("Did you pass the correct form id to auth function")
+            console.error("Did you pass the correct form id 'login-form' to auth function");
             return;
         }
         form.submit()
     }
 
-    // Define function to convert credentials to JSON
-    const credToJSON = (pubKeyCred) => {
-        if (pubKeyCred instanceof Array) {
-            return pubKeyCred.map(credToJSON);
-        }
-        if (pubKeyCred instanceof ArrayBuffer) {
-            return base64urlEncode(pubKeyCred);
-        }
-        if (pubKeyCred instanceof Object) {
-            const res = {};
-            for (const key in pubKeyCred) {
-                res[key] = credToJSON(pubKeyCred[key]);
-            }
-            return res;
-        }
-        return pubKeyCred;
-    };
-
-    // Define function to handle assertion request
-    const getAssertReq = (getAssert) => {
-        console.log(getAssert)
-        getAssert.publicKey.challenge = base64urlDecode(getAssert.publicKey.challenge);
-        for (const allowCred of getAssert.publicKey.allowCredentials) {
-            allowCred.id = base64urlDecode(allowCred.id);
-        }
-        return getAssert;
-    };
-
-    // Define function to handle registration request
     const makeCredReq = (creds) => {
-        creds.publicKey.challenge = base64urlDecode(creds.publicKey.challenge);
-        creds.publicKey.user.id = base64urlDecode(creds.publicKey.user.id);
+        creds.publicKey.challenge = base64URLStringToBuffer(creds.publicKey.challenge);
+        creds.publicKey.user.id = base64URLStringToBuffer(creds.publicKey.user.id);
         for (const excludeCred of creds.publicKey.excludeCredentials) {
-            excludeCred.id = base64urlDecode(excludeCred.id);
+            excludeCred.id = base64URLStringToBuffer(excludeCred.id);
         }
         return creds;
     };
@@ -103,15 +100,71 @@
                 });
         });
     }
-    function startAuthn(options, conditionalUI) {
-        if (conditionalUI) {
-            options.mediation = 'conditional';
-            options.signal = window.conditionUIAbortSignal;
-        }
-        else
-            window.conditionUIAbortController.abort()
-        return navigator.credentials.get(options);
+
+    function toPublicKeyCredentialDescriptor(descriptor) {
+        const { id } = descriptor;
+
+        return {
+            ...descriptor,
+            id: base64URLStringToBuffer(id),
+            transports: descriptor.transports,
+        };
     }
+
+    function startAuthentication(requestOptionsJSON) {
+        // We need to avoid passing empty array to avoid blocking retrieval
+        // of public key
+        let allowCredentials;
+        if (requestOptionsJSON.allowCredentials && requestOptionsJSON.allowCredentials.length !== 0) {
+            allowCredentials = requestOptionsJSON.allowCredentials.map(toPublicKeyCredentialDescriptor);
+        }
+
+        // We need to convert some values to Uint8Arrays before passing the credentials to the navigator
+        const publicKey = {
+            ...requestOptionsJSON,
+            challenge: base64URLStringToBuffer(requestOptionsJSON.challenge),
+            allowCredentials,
+        };
+
+        // Prepare options for `.get()`
+        const options = {
+            publicKey,
+        };
+
+        // Wait for the user to complete assertion
+        navigator.credentials.get(options)
+            .then(credential => {
+                if (!credential) {
+                    throw new Error('Authentication was not completed');
+                }
+                const { id, rawId, response, type } = credential;
+
+                let userHandle = undefined;
+                if (response.userHandle) {
+                    userHandle = bufferToUTF8String(response.userHandle);
+                }
+                let attachmentOptions = ["platform", "cross-platform"];
+                let attachment = response.authenticatorAttachment;
+                handleForm({
+                    id,
+                    rawId: bufferToBase64URLString(rawId),
+                    response: {
+                        authenticatorData: bufferToBase64URLString(response.authenticatorData),
+                        clientDataJSON: bufferToBase64URLString(response.clientDataJSON),
+                        signature: bufferToBase64URLString(response.signature),
+                        userHandle,
+                    },
+                    type,
+                    clientExtensionResults: credential.getClientExtensionResults(),
+                    authenticatorAttachment: attachment && attachmentOptions.indexOf(attachment) != -1 ? attachment : undefined,
+                })
+            })
+            .catch(error => {
+                console.error("Error occurred during authentication:", error);
+            });
+    }
+
+
     const beginReg = () => {
         fetch(window.passkeysConfig.urls.regBegin, {})
             .then(response => {
@@ -124,14 +177,48 @@
                 return navigator.credentials.create(options);
             })
             .then(attestation => {
+                const { id, rawId, response, type } = attestation;
                 attestation["key_name"] = document.querySelector("#key_name").value;
-                attestation["rawId"] = base64urlEncode(attestation["rawId"]);
-                for (const key in attestation["response"]) {
-                    attestation["response"][key] = base64urlEncode(attestation.response[key]);
+                let transports;
+                if (typeof response.getTransports === "function") {
+                    transports = response.getTransports();
+                }
+                let responsePublicKeyAlgorithm;
+                if (typeof response.getPublicKeyAlgorithm === "function") {
+                    responsePublicKeyAlgorithm = response.getPublicKeyAlgorithm();
+                }
+                let responsePublicKey;
+                if (typeof response.getPublicKey === "function") {
+                    responsePublicKey = bufferToBase64URLString(response.getPublicKey());
+                }
+                let authenticatorData;
+                if (typeof response.getAuthenticatorData === "function") {
+                    try {
+                        authenticatorData = bufferToBase64URLString(response.getAuthenticatorData());
+                    } catch (error) {
+                    }
+                }
+
+                let attachmentOptions = ["platform", "cross-platform"];
+                let attachment = attestation.authenticatorAttachment;
+                const res = {
+                    id,
+                    rawId: bufferToBase64URLString(rawId),
+                    response: {
+                        attestationObject: bufferToBase64URLString(response.attestationObject),
+                        clientDataJSON: bufferToBase64URLString(response.clientDataJSON),
+                        transports,
+                        publicKeyAlgorithm: responsePublicKeyAlgorithm,
+                        publicKey: responsePublicKey,
+                        authenticatorData: authenticatorData,
+                    },
+                    type,
+                    clientExtensionResults: attestation.getClientExtensionResults(),
+                    authenticatorAttachment: attachment && attachmentOptions.indexOf(attachment) != -1 ? attachment : undefined,
                 }
                 return fetch(window.passkeysConfig.urls.regComplete, {
                     method: 'POST',
-                    body: JSON.stringify(credToJSON(attestation))
+                    body: JSON.stringify(res)
                 });
             })
             .then(response => {
@@ -145,7 +232,7 @@
                 }
             })
             .catch(reason => {
-                document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>Registration Failed as " + reason + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
+                document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>catch: Registration Failed as " + reason + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
             });
     };
 
@@ -183,25 +270,10 @@
     }
 
 
-    function startRegistration() {
-        const modalTitle = document.querySelector("#modal-title");
-        const modalBody = document.querySelector("#modal-body");
-
-        modalTitle.innerHTML = "Enter a token name";
-        modalBody.innerHTML = `<p>Please enter a name for your new token</p>
-                                <input type="text" placeholder="e.g Laptop, PC" id="key_name" class="form-control"/><br/>
-                                <div id="res"></div>`;
-        const modalFooter = document.querySelector("#modal-footer");
-        modalFooter.insertAdjacentHTML('afterbegin', `<button id='actionBtn' class='btn btn-success' onclick="djangoPasskey.beginReg()">Start</button>`);
-        document.querySelector("#popUpModal").style.display = "block";
-    }
-
     function initialize() {
         getServerCredentials()
             .then(data => {
-                startAuthn(getAssertReq(credToJSON(data))).then((assertion) => {
-                    assertFunc(assertion);
-                });
+                startAuthentication(data.publicKey);
             })
             .catch(error => {
                 console.error('Error during login:', error);
@@ -211,7 +283,6 @@
 
 
     window.djangoPasskey = {
-        startRegistration: startRegistration,
         deleteKey: deleteKey,
         beginReg: beginReg,
         initialize: initialize
@@ -264,7 +335,6 @@ function handleOTPLogin() {
         input.addEventListener("keyup", handleOtp);
         input.addEventListener("paste", handleOnPasteOtp);
         input.addEventListener("focus", e => {
-            console.log("focused ", e)
         })
     });
 }
@@ -300,7 +370,6 @@ function handleOnPasteOtp(e) {
     }
 }
 function addValueToForm() {
-    console.log("Submitting...");
     // 👇 Entered OTP
     let otp = "";
     inputs.forEach((input) => {
@@ -337,3 +406,6 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+
+

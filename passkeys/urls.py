@@ -15,5 +15,4 @@ urlpatterns = [
     path("add/", views.add, name="add"),
     path("del/", views.del_key, name="delKey"),
     path("toggle/", views.toggle_key, name="toggle"),
-    path("settings/", views.settings, name="settings"),
 ]
