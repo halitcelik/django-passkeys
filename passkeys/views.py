@@ -49,7 +49,6 @@ def login_options(request):
                 "next": next_,
             }
         )
-        form.fields[UserModel.USERNAME_FIELD].disabled = True
         username = request.POST.get(UserModel.USERNAME_FIELD)
         filter_args = {UserModel.USERNAME_FIELD: username}
         user = UserModel.objects.filter(**filter_args)
