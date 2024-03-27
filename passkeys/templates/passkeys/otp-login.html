@@ -1,29 +1,49 @@
 {% extends "passkeys/base.html" %}
 {% load i18n static %}
 {% block headtitle %}{% trans "Login" %}{{block.super}}{% endblock headtitle %}
+{% block bodytag %}class="login"{% endblock bodytag %}
+
 {% block content %}
-<main>
-    <h1>{% trans "Login" %}</h1>
-    <form id="login-form" method="post" action=".">
-        {% csrf_token %}
-        {{form.as_p}}
-        
-        {% if not otp_invalid %}            
-        <div class="otp-field">
-            <input type="text" maxlength="1" required />
-            <input type="text" maxlength="1" required />
-            <input class="space" type="text" maxlength="1" required />
-            <input type="text" maxlength="1" required />
-            <input type="text" maxlength="1" required />
-            <input type="text" maxlength="1" required />
+<div id="container"> <!-- Header -->
+    <div id="header">
+        <div id="branding">
+
+            <h1 id="site-name"><a href="/en/admin/">Verify email code</a></h1>
         </div>
-        <div class="buttons-grid grid">
-            <input type="submit" class="action-button button"  value="{{ button_text }}" />
+    </div>
+    <!-- END Header -->
+    <div class="main" id="main">
+        <div id="content-start" class="content" tabindex="-1">
+            <!-- Content -->
+            <div id="content" class="colM">
+                {% if form.errors %}
+                    {{form.errors.otp}}
+                {% endif %}
+                <div id="content-main">
+                    <form id="login-form" method="post" action=".">
+
+                        {% csrf_token %}
+                        {{form.as_p}}
+                        
+                        {% if not otp_invalid %}            
+                        <div class="otp-field">
+                            <input type="text" maxlength="1" required />
+                            <input type="text" maxlength="1" required />
+                            <input class="space" type="text" maxlength="1" required />
+                            <input type="text" maxlength="1" required />
+                            <input type="text" maxlength="1" required />
+                            <input type="text" maxlength="1" required />
+                        </div>
+                        {% endif %}
+                        <div id="footer">
+                            <div class="submit-row">
+                                <input type="submit" class="action-button button"  value="{{ button_text }}" />
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        {% endif %}
-    </form>
-        {% for option in login_options %}
-        {% include option.template %}
-    {% endfor %} 
+    </div>
 </main>
 {% endblock %}

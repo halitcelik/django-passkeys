@@ -36,12 +36,9 @@ UserModel = get_user_model()
 def login_options(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Next")
-    template = "passkeys/login.html"
     form = LoginOptionsForm(initial={"next": next_})
     filter_args = {UserModel.USERNAME_FIELD: None}
     options = []
-    if hasattr(request, "htmx") and request.htmx:
-        template = "passkeys/includes/login-form.html"
     if request.method == "POST":
         form = PasswordLoginForm(
             initial={
@@ -75,7 +72,8 @@ def login_options(request):
             if passkeys.exists():
                 request.session["base_username"] = username
                 options.append({"value": "passkey", "text": "Login with passkey"})
-            options.append({"value": "otp", "text": _("Receive email code")})
+            if hasattr(settings, "USE_OTP_LOGIN"):
+                options.append({"value": "otp", "text": _("Receive email code")})
         elif request.POST.get("password"):
             # User does not exist but they tried to login with password.
             # We need to try to validate the form to be able to add error to it.
@@ -94,9 +92,8 @@ def login_options(request):
 
     return render(
         request,
-        template,
+        "passkeys/login.html",
         {
-            **filter_args,
             "form": form,
             "next": next_,
             "button_text": button_text,
@@ -133,12 +130,10 @@ def otp_login(request):
     if request.method == "POST":
         form = LoginOptionsForm(request.POST)
         email = request.POST.get("email")
-        if OTP.objects.filter(
-            email=email, created_at__gte=utc_now() - datetime.timedelta(seconds=60)
-        ).exists():
+        if OTP.objects.filter(email=email).exists():
+            # User has an OTP
             form = OTPLoginForm(request.POST)
             if request.POST.get("otp"):
-                form = OTPLoginForm(request.POST)
                 if form.is_valid():
                     otp = OTP.objects.filter(
                         key=form.cleaned_data.get("otp"),
@@ -171,14 +166,14 @@ def otp_login(request):
                         form.fields.pop("otp")
                         form.fields["email"].widget = forms.EmailInput()
                         button_text = _("Resend verification code")
-        else:
-            form = OTPLoginForm(request.POST)
-            new_otp = OTP.objects.create(
-                key="".join(random.choice(digits) for i in range(6)),
-                email=request.POST.get("email"),
-            )
-            new_otp.send()
-            button_text = _("Verify")
+            else:
+                form = OTPLoginForm(request.POST)
+                new_otp = OTP.objects.create(
+                    key="".join(random.choice(digits) for i in range(6)),
+                    email=request.POST.get("email"),
+                )
+                new_otp.send()
+                button_text = _("Verify")
         return render(
             request,
             "passkeys/otp-login.html",

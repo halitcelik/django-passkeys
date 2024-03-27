@@ -3,12 +3,6 @@
 
 {% block headtitle %}{% trans "Login" %}{{block.super}}{% endblock headtitle %}
 
-{% block head %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static "admin/css/login.css" %}">
-<link rel="stylesheet" href="{% static "admin/css/base.css" %}">
-{% endblock head %}
-
 {% block bodytag %}class="login"{% endblock bodytag %}
     
 {% block content %}
