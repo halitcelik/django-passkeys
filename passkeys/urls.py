@@ -1,5 +1,6 @@
 from django.urls import path
 from . import FIDO2, views
+from django.conf import settings
 
 app_name = "passkeys"
 urlpatterns = [
@@ -15,3 +16,6 @@ urlpatterns = [
     path("del/", views.del_key, name="delKey"),
     path("toggle/", views.toggle_key, name="toggle"),
 ]
+
+if hasattr(settings, "USE_OTP_LOGIN"):
+    urlpatterns += [path("login/otp/", views.otp_login, name="login.otp")]

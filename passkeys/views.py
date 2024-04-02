@@ -36,12 +36,9 @@ UserModel = get_user_model()
 def login_options(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Next")
-    template = "passkeys/login.html"
     form = LoginOptionsForm(initial={"next": next_})
     filter_args = {UserModel.USERNAME_FIELD: None}
     options = []
-    if hasattr(request, "htmx") and request.htmx:
-        template = "passkeys/includes/login-form.html"
     if request.method == "POST":
         form = PasswordLoginForm(
             initial={
@@ -49,7 +46,6 @@ def login_options(request):
                 "next": next_,
             }
         )
-        form.fields[UserModel.USERNAME_FIELD].disabled = True
         username = request.POST.get(UserModel.USERNAME_FIELD)
         filter_args = {UserModel.USERNAME_FIELD: username}
         user = UserModel.objects.filter(**filter_args)
@@ -76,7 +72,8 @@ def login_options(request):
             if passkeys.exists():
                 request.session["base_username"] = username
                 options.append({"value": "passkey", "text": "Login with passkey"})
-            options.append({"value": "otp", "text": _("Receive email code")})
+            if hasattr(settings, "USE_OTP_LOGIN"):
+                options.append({"value": "otp", "text": _("Receive email code")})
         elif request.POST.get("password"):
             # User does not exist but they tried to login with password.
             # We need to try to validate the form to be able to add error to it.
@@ -95,9 +92,8 @@ def login_options(request):
 
     return render(
         request,
-        template,
+        "passkeys/login.html",
         {
-            **filter_args,
             "form": form,
             "next": next_,
             "button_text": button_text,

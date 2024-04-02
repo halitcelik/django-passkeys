@@ -147,7 +147,6 @@ def auth_begin(request):
     res = dict(auth_data)
     res["publicKey"]["userVerification"] = "preferred"
     res["publicKey"]["timeout"] = 12000
-    print(res)
     return JsonResponse(res)
 
 
