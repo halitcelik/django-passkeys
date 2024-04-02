@@ -67,7 +67,7 @@
 
         pkInput.value = JSON.stringify(jsonData);
         let form = document.getElementById("login-form");
-        form.action = window.passkeysConfig.urls.login.passkey;
+        form.action = `${passkeysConfig.baseUrl}/login/passkey`;
         if (form === null || form === undefined) {
             console.error("Did you pass the correct form id 'login-form' to auth function");
             return;
@@ -85,7 +85,7 @@
     };
     function getServerCredentials() {
         return new Promise((resolve, reject) => {
-            fetch(window.passkeysConfig.urls.authBegin)
+            fetch(`${passkeysConfig.baseUrl}/auth/begin`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Could not get credentials from the server.');
@@ -169,7 +169,7 @@
 
 
     const beginReg = () => {
-        fetch(window.passkeysConfig.urls.regBegin, {})
+        fetch(`${passkeysConfig.baseUrl}/registration/begin`, {})
             .then(response => {
                 if (response.ok) {
                     return response.json().then(makeCredReq);
@@ -219,7 +219,7 @@
                     clientExtensionResults: attestation.getClientExtensionResults(),
                     authenticatorAttachment: attachment && attachmentOptions.indexOf(attachment) != -1 ? attachment : undefined,
                 }
-                return fetch(window.passkeysConfig.urls.regComplete, {
+                return fetch(`${passkeysConfig.baseUrl}/registration/complete`, {
                     method: 'POST',
                     body: JSON.stringify(res)
                 });
@@ -229,7 +229,7 @@
             })
             .then(res => {
                 if (res["status"] == 'OK') {
-                    window.location.href = window.passkeysConfig.urls.home;
+                    window.location.href = passkeysConfig.baseUrl;
                 } else {
                     document.querySelector("#res").insertAdjacentHTML("afterbegin", "<div class='alert alert-danger'>Registration Failed as " + res + ", <a href='javascript:void(0)' onclick='djangoPasskey.beginReg()'> try again </a> </div>");
                 }
@@ -240,7 +240,7 @@
     };
 
     function deleteKey(id) {
-        fetch(window.passkeysConfig.urls.delKey, {
+        fetch(`${passkeysConfig.baseUrl}/del`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -251,7 +251,7 @@
             .then(response => response.text())
             .then(data => {
                 alert(data);
-                window.location.href = window.passkeysConfig.urls.home;
+                window.location.href = window.passkeysConfig.baseUrl;
             })
             .catch(error => {
                 console.error('Error confirming deletion:', error);
@@ -260,7 +260,7 @@
 
 
     function toggleKey(id) {
-        fetch(window.passkeysConfig.urls.toggle, {
+        fetch(`${passkeysConfig.baseUrl}/toggle`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

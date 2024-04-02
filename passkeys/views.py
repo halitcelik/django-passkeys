@@ -131,47 +131,43 @@ def otp_login(request):
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Verify")
     otp_invalid = False
+    login_options = []
+
     if request.method == "POST":
         form = LoginOptionsForm(request.POST)
-        email = request.POST.get("email")
-        if OTP.objects.filter(
-            email=email, created_at__gte=utc_now() - datetime.timedelta(seconds=60)
-        ).exists():
+        if request.POST.get("otp"):
             form = OTPLoginForm(request.POST)
-            if request.POST.get("otp"):
-                form = OTPLoginForm(request.POST)
-                if form.is_valid():
-                    otp = OTP.objects.filter(
-                        key=form.cleaned_data.get("otp"),
-                        email=form.cleaned_data.get("email"),
-                        created_at__gte=utc_now() - datetime.timedelta(seconds=60),
+            if form.is_valid():
+                otp = OTP.objects.filter(
+                    key=form.cleaned_data.get("otp"),
+                    email=form.cleaned_data.get("email"),
+                    created_at__gte=utc_now() - datetime.timedelta(seconds=60),
+                )
+                if otp.exists():
+                    otp = otp.first()
+                    user = UserModel.objects.get(email=request.POST.get("email"))
+                    login(
+                        request,
+                        user,
+                        backend=[
+                            be
+                            for be in settings.AUTHENTICATION_BACKENDS
+                            if "EmailBackend" in be
+                        ][0],
                     )
-                    if otp.exists():
-                        otp = otp.first()
-                        user = UserModel.objects.get(email=request.POST.get("email"))
-                        login(
-                            request,
-                            user,
-                            backend=[
-                                be
-                                for be in settings.AUTHENTICATION_BACKENDS
-                                if "EmailBackend" in be
-                            ][0],
-                        )
-                        return HttpResponseRedirect(
-                            request.GET.get("next", form.cleaned_data.get("next", "/"))
-                        )
-                    else:
-                        otp_invalid = True
-                        form.add_error(
-                            "otp",
-                            _(
-                                "Your OTP code is either expired or invalid. Ask a new one."
-                            ),
-                        )
-                        form.fields.pop("otp")
-                        form.fields["email"].widget = forms.EmailInput()
-                        button_text = _("Resend verification code")
+                    return HttpResponseRedirect(
+                        request.GET.get("next", form.cleaned_data.get("next", "/"))
+                    )
+                else:
+                    otp_invalid = True
+                    form.add_error(
+                        "otp",
+                        _("Your OTP code is either expired or invalid. Ask a new one."),
+                    )
+                    form.fields.pop("otp")
+                    form.fields["email"].widget = forms.EmailInput()
+                    button_text = _("Resend verification code")
+
         else:
             form = OTPLoginForm(request.POST)
             new_otp = OTP.objects.create(
@@ -188,6 +184,7 @@ def otp_login(request):
                 "next": next_,
                 "otp_invalid": otp_invalid,
                 "button_text": button_text,
+                "login_options": login_options,
             },
         )
 

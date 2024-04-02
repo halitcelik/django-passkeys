@@ -3,6 +3,8 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'passkeys/css/styles.css' %}">
+<link rel="stylesheet" href="{% static 'admin/css/login.css' %}">
+<link rel="stylesheet" href="{% static 'admin/css/base.css' %}">
 {% endblock head %}
     
 {% block endbodyscript %}
@@ -10,8 +12,8 @@
 <script>
     window.passkeysConfig = {
         crossPlatform: "{{request.session.passkey.cross_platform|default:0}}",
-        enroll: "{{enroll}}",
-        urls: {
+        baseUrl: "{% url 'passkeys:home' %}",
+        {% comment %} urls: {
             home: "{% url 'passkeys:home' %}",
             authBegin: "{% url 'passkeys:auth_begin' %}",
             regBegin: "{% url 'passkeys:reg_begin' %}",
@@ -23,7 +25,7 @@
                 otp: "{% url 'passkeys:login.otp' %}",
             }
             
-        },
+        }, {% endcomment %}
     }
     let passwordInput = document.querySelector("#id_password");
     if (passwordInput) {
@@ -36,7 +38,10 @@
             let form = element.closest("form");
             form.querySelector("#id_password").required = false;
             form.querySelector("input[name='type']").value = element.dataset.passkeyValue;
-            form.action = passkeysConfig.urls.login[element.dataset.passkeyValue];
+            form.querySelectorAll("input[disabled]").forEach(i => {
+                i.removeAttribute("disabled");
+            })
+            form.action = `${passkeysConfig.baseUrl}/login/${element.dataset.passkeyValue}`;
             form.submit();
         }
     })
