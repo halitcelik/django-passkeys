@@ -6,3 +6,4 @@ fido2==1.1.1
 pycparser==2.21
 pytz==2022.5
 sqlparse==0.4.3
+django-passkeys @ git+https://github.com/halitcelik/django-passkeys.git@d76cf893b71255f8a163923f8f46bd188fc626cf

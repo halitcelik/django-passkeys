@@ -336,8 +336,7 @@ class DeleteKeyViewTest(TransactionTestCase):
         "django.contrib.auth.backends.ModelBackend",
         "test_app.backends.EmailBackend",
         "passkeys.backend.PasskeyModelBackend",
-    ),
-    LOGIN_URL="/passkeys/login/",
+    )
 )
 class ToggleKeyViewTest(TransactionTestCase):
 
@@ -351,9 +350,7 @@ class ToggleKeyViewTest(TransactionTestCase):
         )
         self.client.login(username="testuser", password="testpassword")
 
-        key = UserPasskey.objects.create(
-            user=user, token="testkey", name="testkey", credential_id="testcredential"
-        )
+        key = UserPasskey.objects.create(user=user, key="testkey")
 
         response = self.client.post(
             self.toggle_key_url,
@@ -368,9 +365,12 @@ class ToggleKeyViewTest(TransactionTestCase):
         response = self.client.post(
             self.toggle_key_url, json.dumps({"id": 1}), content_type="application/json"
         )
-        print(response.content.decode())
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, "/passkeys/login/?next=/passkeys/toggle/")
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.content.decode(),
+            "Error: You don't own this token so you can't toggle it",
+        )
 
 
 @override_settings(

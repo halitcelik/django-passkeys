@@ -34,11 +34,15 @@ UserModel = get_user_model()
 
 
 def login_options(request):
+    import pudb
+
+    pudb.set_trace()
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Next")
     form = LoginOptionsForm(initial={"next": next_})
-    filter_args = {UserModel.USERNAME_FIELD: None}
+    use_email = UserModel.USERNAME_FIELD == "email"
     options = []
+
     if request.method == "POST":
         form = PasswordLoginForm(
             initial={
@@ -72,7 +76,7 @@ def login_options(request):
             if passkeys.exists():
                 request.session["base_username"] = username
                 options.append({"value": "passkey", "text": "Login with passkey"})
-            if hasattr(settings, "USE_OTP_LOGIN"):
+            if hasattr(settings, "USE_OTP_LOGIN") and use_email:
                 options.append({"value": "otp", "text": _("Receive email code")})
         elif request.POST.get("password"):
             # User does not exist but they tried to login with password.
@@ -104,6 +108,9 @@ def login_options(request):
 
 
 def passkey_login(request):
+    import pudb
+
+    pudb.set_trace()
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     if request.method == "POST":
         if request.POST.get("passkeys"):

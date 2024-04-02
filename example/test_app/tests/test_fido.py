@@ -3,11 +3,12 @@ from base64 import urlsafe_b64encode
 from importlib import import_module
 
 from django.http import HttpRequest
-from django.test import RequestFactory, TransactionTestCase, Client
+from django.test import RequestFactory, TransactionTestCase, Client, override_settings
 from django.urls import reverse
 
 from django.conf import settings
 from test_app.soft_webauthn import SoftWebauthnDevice
+from django.contrib.auth import get_user_model
 
 from passkeys.models import UserPasskey
 
@@ -24,8 +25,6 @@ class test_fido(TransactionTestCase):
     def setUp(self) -> None:
         if not getattr(self, "assertEquals", None):
             self.assertEquals = self.assertEqual
-        from django.contrib.auth import get_user_model
-
         self.user_model = get_user_model()
         if self.user_model.objects.filter(username="test").count() == 0:
             self.user = self.user_model.objects.create_user(
@@ -43,14 +42,15 @@ class test_fido(TransactionTestCase):
         self.client.cookies["sessionid"] = store.session_key
 
         self.client.post(
-            "/auth/login", {"username": "test", "password": "test", "passkeys": ""}
+            "/passkeys/login", {"username": "test", "password": "test", "passkeys": ""}
         )
         self.factory = RequestFactory()
 
     def test_key_reg(self):
         self.client.post(
-            "auth/login", {"usernaame": "test", "password": "test", "passkeys": ""}
-        )  # how can this possibly log in with that typo?
+            reverse("passkeys:login"),
+            {"username": "test", "password": "test", "passkeys": ""},
+        )
         r = self.client.get(reverse("passkeys:reg_begin"))
         self.assertEquals(r.status_code, 200)
         j = json.loads(r.content)
@@ -74,7 +74,7 @@ class test_fido(TransactionTestCase):
 
         self.assertEquals(j["status"], "OK")
         self.assertEquals(UserPasskey.objects.latest("id").name, "testKey")
-        return s
+        return
 
     def test_auto_key_name(self):
         r = self.client.get(reverse("passkeys:reg_begin"))

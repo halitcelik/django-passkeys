@@ -14,20 +14,7 @@
 <script>
     window.passkeysConfig = {
         crossPlatform: "{{request.session.passkey.cross_platform|default:0}}",
-        baseUrl: "{% url 'passkeys:home' %}",
-        {% comment %} urls: {
-            home: "{% url 'passkeys:home' %}",
-            authBegin: "{% url 'passkeys:auth_begin' %}",
-            regBegin: "{% url 'passkeys:reg_begin' %}",
-            regComplete: "{% url 'passkeys:reg_complete' %}",
-            delKey: "{% url 'passkeys:delKey' %}",
-            toggle: "{% url 'passkeys:toggle' %}",
-            login: {
-                passkey: "{% url 'passkeys:login.passkey' %}",
-                otp: "{% url 'passkeys:login.otp' %}",
-            }
-            
-        }, {% endcomment %}
+        baseUrl: "{% url 'passkeys:home' %}"
     }
     let passwordInput = document.querySelector("#id_password");
     if (passwordInput) {
@@ -43,7 +30,7 @@
             form.querySelectorAll("input[disabled]").forEach(i => {
                 i.removeAttribute("disabled");
             })
-            form.action = `${passkeysConfig.baseUrl}/login/${element.dataset.passkeyValue}`;
+            form.action = `${passkeysConfig.baseUrl}login/${element.dataset.passkeyValue}`;
             form.submit();
         }
     })
