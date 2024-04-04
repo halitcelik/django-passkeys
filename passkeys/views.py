@@ -17,6 +17,7 @@ from passkeys.backend import PasskeyBackendException
 from passkeys.FIDO2 import (
     auth_complete,
 )
+from django.views.decorators.http import require_POST
 from django import forms
 from passkeys.models import UserPasskey
 
@@ -25,7 +26,6 @@ from django.contrib.auth import get_user_model, login
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from .forms import LoginOptionsForm, PasswordLoginForm, OTPLoginForm
@@ -34,9 +34,6 @@ UserModel = get_user_model()
 
 
 def login_options(request):
-    import pudb
-
-    pudb.set_trace()
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     button_text = _("Next")
     form = LoginOptionsForm(initial={"next": next_})
@@ -108,9 +105,6 @@ def login_options(request):
 
 
 def passkey_login(request):
-    import pudb
-
-    pudb.set_trace()
     next_ = request.GET.get("next", request.POST.get("next", "/"))
     if request.method == "POST":
         if request.POST.get("passkeys"):
@@ -129,72 +123,69 @@ def passkey_login(request):
         else:
             return render(request, "passkeys/login.html")
 
-
+@require_POST
 def otp_login(request):
-    next_ = request.GET.get("next", request.POST.get("next", "/"))
+    next_ = request.POST.get("next", "/")
     button_text = _("Verify")
     otp_invalid = False
     login_options = []
 
-    if request.method == "POST":
-        form = LoginOptionsForm(request.POST)
-        if request.POST.get("otp"):
-            form = OTPLoginForm(request.POST)
-            if form.is_valid():
-                otp = OTP.objects.filter(
-                    key=form.cleaned_data.get("otp"),
-                    email=form.cleaned_data.get("email"),
-                    created_at__gte=utc_now() - datetime.timedelta(seconds=60),
-                )
-                if otp.exists():
-                    otp = otp.first()
-                    user = UserModel.objects.get(email=request.POST.get("email"))
-                    login(
-                        request,
-                        user,
-                        backend=[
-                            be
-                            for be in settings.AUTHENTICATION_BACKENDS
-                            if "EmailBackend" in be
-                        ][0],
-                    )
-                    return HttpResponseRedirect(
-                        request.GET.get("next", form.cleaned_data.get("next", "/"))
-                    )
-                else:
-                    otp_invalid = True
-                    form.add_error(
-                        "otp",
-                        _("Your OTP code is either expired or invalid. Ask a new one."),
-                    )
-                    form.fields.pop("otp")
-                    form.fields["email"].widget = forms.EmailInput()
-                    button_text = _("Resend verification code")
-
-        else:
-            form = OTPLoginForm(request.POST)
-            new_otp = OTP.objects.create(
-                key="".join(random.choice(digits) for i in range(6)),
-                email=request.POST.get("email"),
+    form = LoginOptionsForm(request.POST)
+    if request.POST.get("otp"):
+        form = OTPLoginForm(request.POST)
+        if form.is_valid():
+            otp = OTP.objects.filter(
+                key=form.cleaned_data.get("otp"),
+                email=form.cleaned_data.get("email"),
+                created_at__gte=utc_now() - datetime.timedelta(seconds=60),
             )
-            new_otp.send()
-            button_text = _("Verify")
-        return render(
-            request,
-            "passkeys/otp-login.html",
-            {
-                "form": form,
-                "next": next_,
-                "otp_invalid": otp_invalid,
-                "button_text": button_text,
-                "login_options": login_options,
-            },
+            if otp.exists():
+                otp = otp.first()
+                user = UserModel.objects.get(email=request.POST.get("email"))
+                login(
+                    request,
+                    user,
+                    backend=[
+                        be
+                        for be in settings.AUTHENTICATION_BACKENDS
+                        if "EmailBackend" in be
+                    ][0],
+                )
+                return HttpResponseRedirect(form.cleaned_data.get("next", "/"))
+            else:
+                otp_invalid = True
+                form.add_error(
+                    "otp",
+                    _("Your OTP code is either expired or invalid. Ask a new one."),
+                )
+                form.fields.pop("otp")
+                form.fields["email"].widget = forms.EmailInput()
+                button_text = _("Resend verification code")
+
+    else:
+        form = OTPLoginForm(request.POST)
+        new_otp = OTP.objects.create(
+            key="".join(random.choice(digits) for i in range(6)),
+            email=request.POST.get("email"),
         )
+        new_otp.send()
+        button_text = _("Verify")
+    return render(
+        request,
+        "passkeys/otp-login.html",
+        {
+            "form": form,
+            "next": next_,
+            "otp_invalid": otp_invalid,
+            "button_text": button_text,
+            "login_options": login_options,
+        },
+    )
 
 
 @login_required
 def index(request):  # noqa
-    keys = UserPasskey.objects.filter(user=request.user)  # pragma: no cover
+    keys = UserPasskey.objects.filter(user=request.user).order_by("-last_used")  # pragma: no cover
     return render(request, "passkeys/passkeys.html", {"keys": keys})  # pragma: no cover
 
 
@@ -221,7 +212,7 @@ def del_key(request):
 def toggle_key(request):
     data = json.loads(request.body)
     key = UserPasskey.objects.filter(id=data.get("id"))
-    if key.exists():
+    if key.exists() and key.first().user.pk == request.user.pk:
         key = key.first()
         key.enabled = not key.enabled
         key.save()

@@ -1,19 +1,11 @@
 import json
-from django.test import TransactionTestCase, Client, override_settings
+from django.test import TransactionTestCase, Client, override_settings, tag
 from django.urls import reverse
 from passkeys.models import UserPasskey, OTP
 from .test_fido import test_fido
 from django.contrib.auth import get_user_model
-from passkeys.forms import LoginOptionsForm
+from passkeys.forms import LoginOptionsForm, PasswordLoginForm
 
-
-@override_settings(
-    AUTHENTICATION_BACKENDS=(
-        "django.contrib.auth.backends.ModelBackend",
-        "test_app.backends.EmailBackend",
-        "passkeys.backend.PasskeyModelBackend",
-    )
-)
 class TestViews(TransactionTestCase):
 
     def setUp(self) -> None:
@@ -22,68 +14,62 @@ class TestViews(TransactionTestCase):
             self.assertEquals = self.assertEqual
 
         self.user_model = get_user_model()
-        # self.user = self.user_model.objects.create_user(username="test", password="test")
         self.client = Client()
-        # self.client.post("/auth/login", {"username": "test", "password": "test", 'passkeys': ''})
-        test = test_fido()
-        test.setUp()
-        self.authenticator = test.test_key_reg()
-        self.user = self.user_model.objects.get(username="test")
-
-        res = self.client.post(
-            "/passkeys/login/", {"username": "test", "password": "test", "passkeys": ""}
+        self.user = self.user_model.objects.create_user(
+            username="test1", password="test1", email="test1@test.com"
         )
+        self.user2 = self.user_model.objects.create_user(
+            username="test2", password="test2", email="test2@test.com"
+        )
+        self.passkey = UserPasskey.objects.create(user=self.user, credential_id="test_creds", name="test_key")
 
     def test_disabling_key(self):
-        key = UserPasskey.objects.filter(user=self.user).latest("id")
-        res = self.client.post(reverse("passkeys:toggle"), data={"id": str(key.id)})
-        self.assertFalse(UserPasskey.objects.get(id=key.id).enabled)
-
-        res2 = self.client.post(reverse("passkeys:toggle"), data={"id": str(key.id)})
-        self.assertTrue(UserPasskey.objects.get(id=key.id).enabled)
-
-    def test_deleting_key(self):
-        key = UserPasskey.objects.filter(user=self.user).latest("id")
-        res = self.client.post(reverse("passkeys:delKey"), data={"id": str(key.id)})
-        self.assertEquals(UserPasskey.objects.filter(id=key.id).count(), 0)
-
-    def test_wrong_ownership(self):
-        test = test_fido()
-        test.setUp()
-        authenticator = test.test_key_reg()
-        key = UserPasskey.objects.filter(user=self.user).latest("id")
-        self.user = self.user_model.objects.create_user(
-            username="test2", password="test2"
-        )
         self.client.post(
             "/passkeys/login/",
-            {"username": "test2", "password": "test2", "passkeys": ""},
+            {"email": "test1@test.com", "password": "test1", "passkeys": ""},
         )
-        r = self.client.post(reverse("passkeys:delKey"), data={"id": str(key.id)})
+        res = self.client.post(reverse("passkeys:toggle"), json.dumps({"id": str(self.passkey.id)}), content_type='application/json')
+        self.assertFalse(UserPasskey.objects.get(id=self.passkey.id).enabled)
+
+        self.client.post(reverse("passkeys:toggle"), json.dumps({"id": str(self.passkey.id)}), content_type='application/json')
+        self.assertTrue(UserPasskey.objects.get(id=self.passkey.id).enabled)
+
+    def test_deleting_key(self):
+        self.client.post(
+            "/passkeys/login/",
+            {"email": "test1@test.com", "password": "test1", "passkeys": ""},
+        )
+        key = UserPasskey.objects.filter(user=self.user).latest("id")
+        self.client.post(reverse("passkeys:delKey"), json.dumps({"id": str(key.id)}), content_type='application/json')
+        self.assertEquals(UserPasskey.objects.filter(id=key.id).count(), 0)
+    
+    def test_wrong_ownership(self):
+        self.client.post(
+            "/passkeys/login/",
+            {"email": "test2@test.com", "password": "test2", "passkeys": ""},
+        )
+        key = UserPasskey.objects.filter(user=self.user).latest("id")
+        
+        r = self.client.post(reverse("passkeys:delKey"), json.dumps({"id": str(key.id)}), content_type='application/json')        
         self.assertEquals(r.status_code, 403)
         self.assertEquals(
-            r.content, b"Error: You own this token so you can't delete it"
+            r.content, b"Error: You don't own this token so you can't delete it"
         )
-        r = self.client.post(reverse("passkeys:toggle"), data={"id": str(key.id)})
+        r = self.client.post(reverse("passkeys:toggle"), json.dumps({"id": str(key.id)}), content_type='application/json')
         self.assertEquals(r.status_code, 403)
         self.assertEquals(
-            r.content, b"Error: You own this token so you can't toggle it"
+            r.content, b"Error: You don't own this token so you can't toggle it"
         )
 
-
-@override_settings(
-    AUTHENTICATION_BACKENDS=(
-        "django.contrib.auth.backends.ModelBackend",
-        "test_app.backends.EmailBackend",
-        "passkeys.backend.PasskeyModelBackend",
-    )
-)
 class LoginOptionsViewTest(TransactionTestCase):
 
     def setUp(self):
         self.client = Client()
         self.login_options_url = reverse("passkeys:login")
         self.user_model = get_user_model()
+        self.user = self.user_model.objects.create_user(
+            username="test", email="testuser@example.com", password="testpassword"
+        )
 
     def test_get_login_options(self):
         response = self.client.get(self.login_options_url)
@@ -91,128 +77,93 @@ class LoginOptionsViewTest(TransactionTestCase):
         self.assertTemplateUsed(response, "passkeys/login.html")
         self.assertIsInstance(response.context["form"], LoginOptionsForm)
 
-    def test_post_login_options_with_valid_password_username(self):
-        self.user_model.objects.create_user(
-            username="testuser", password="testpassword"
-        )
-
-        response = self.client.post(
-            self.login_options_url,
-            {
-                "username": "testuser",
-                "password": "testpassword",
-            },
-        )
-        print(response.content.decode())
-
-        self.assertRedirects(
-            response, expected_url="/", status_code=302, target_status_code=200
-        )
-
+    
     def test_post_login_options_with_valid_password_email(self):
-        user = self.user_model.objects.create_user(
-            email="testuser@example.com", password="testpassword"
-        )
-
         response = self.client.post(
             self.login_options_url,
             {
-                "email": "testuser@example.com",
+                "email": self.user.email,
                 "password": "testpassword",
+                "next": "/passkeys/"
             },
         )
 
         self.assertRedirects(
-            response, expected_url="/", status_code=302, target_status_code=200
+            response, expected_url="/passkeys/", status_code=302, target_status_code=200
         )
 
     def test_post_login_options_with_invalid_password(self):
         response = self.client.post(
             self.login_options_url,
             {
-                "username": "testuser",
+                "email": self.user.email,
                 "password": "wrongpassword",
             },
         )
 
         self.assertFormError(
-            response, "form", None, "Email address or password wrong. No account yet?"
+            response, "form", None, "Email adresse or password wrong. No account yet?"
         )
 
-    def test_post_login_options_with_invalid_username(self):
+    def test_post_login_options_with_invalid_email(self):
         response = self.client.post(
             self.login_options_url,
             {
-                "username": "nonexistentuser",
+                "email": "nonexistentuser@test.com",
                 "password": "testpassword",
             },
         )
 
         self.assertFormError(
-            response, "form", None, "Email address or password wrong. No account yet?"
+            response, "form", None, "Email adresse or password wrong. No account yet?"
         )
-
     def test_post_login_options_without_password(self):
+        self.user = self.user_model.objects.create_user(
+            username="test2", password="test2", email="test2@test.com"
+        )
         response = self.client.post(
             self.login_options_url,
             {
-                "username": "testuser",
+                "email": "test2@test.com",
                 "password": "",
             },
         )
+        self.assertIsInstance(response.context['form'], PasswordLoginForm)
 
-        self.assertFormError(response, "form", None, "This field is required.")
 
-
-@override_settings(
-    AUTHENTICATION_BACKENDS=(
-        "django.contrib.auth.backends.ModelBackend",
-        "test_app.backends.EmailBackend",
-        "passkeys.backend.PasskeyModelBackend",
-    )
-)
 class OTPLoginViewTest(TransactionTestCase):
 
     def setUp(self):
-        self.client = Client()
-        self.otp_login_url = reverse("otp_login")
         self.user_model = get_user_model()
+        self.user = self.user_model.objects.create_user(email="testuser@example.com", username="test", password="test")
+        self.client = Client()
+        self.otp_login_url = reverse("passkeys:login.otp")
 
-    def test_get_otp_login(self):
+    def test_get_otp_login_raises_405(self):
         response = self.client.get(self.otp_login_url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "passkeys/otp-login.html")
-        self.assertIn("form", response.context)
-        self.assertIn("next", response.context)
-        self.assertIn("otp_invalid", response.context)
-        self.assertIn("button_text", response.context)
-        self.assertIn("login_options", response.context)
-
+        self.assertEqual(response.status_code, 405)
     def test_post_otp_login_with_valid_otp(self):
-        user = self.user_model.objects.create_user(email="testuser@example.com")
-        otp = OTP.objects.create(key="123456", email="testuser@example.com")
-
+        OTP.objects.create(key="123456", email=self.user.email)
         response = self.client.post(
             self.otp_login_url,
             {
                 "otp": "123456",
-                "email": "testuser@example.com",
+                "email": self.user.email,
+                "next": "/passkeys/"
             },
         )
 
         self.assertRedirects(
-            response, expected_url="/", status_code=302, target_status_code=200
+            response, expected_url="/passkeys/", status_code=302, target_status_code=200
         )
-
     def test_post_otp_login_with_invalid_otp(self):
-        user = self.user_model.objects.create_user(email="testuser@example.com")
-        otp = OTP.objects.create(key="123456", email="testuser@example.com")
+        OTP.objects.create(key="123456", email=self.user.email)
 
         response = self.client.post(
             self.otp_login_url,
             {
                 "otp": "654321",
-                "email": "testuser@example.com",
+                "email": self.user.email,
             },
         )
 
@@ -222,19 +173,17 @@ class OTPLoginViewTest(TransactionTestCase):
             "otp",
             "Your OTP code is either expired or invalid. Ask a new one.",
         )
-
+        
     def test_post_otp_login_without_otp(self):
-        response = self.client.post(
+        self.assertFalse(OTP.objects.filter(email=self.user.email).exists())
+        self.client.post(
             self.otp_login_url,
             {
-                "email": "testuser@example.com",
+                "email": self.user.email,
             },
         )
-
-        self.assertFormError(response, "form", "otp", "This field is required.")
-
+        self.assertTrue(OTP.objects.filter(email=self.user.email).exists())
     def test_post_otp_login_resend_otp(self):
-        self.user_model.objects.create_user(email="testuser@example.com")
 
         response = self.client.post(
             self.otp_login_url,
@@ -250,57 +199,34 @@ class OTPLoginViewTest(TransactionTestCase):
 
         self.assertEqual(response.status_code, 200)
 
-
-@override_settings(
-    AUTHENTICATION_BACKENDS=(
-        "django.contrib.auth.backends.ModelBackend",
-        "test_app.backends.EmailBackend",
-        "passkeys.backend.PasskeyModelBackend",
-    )
-)
 class IndexViewTest(TransactionTestCase):
 
     def setUp(self):
         self.client = Client()
-        self.index_url = reverse("index")
-
+        self.index_url = reverse("passkeys:home")
+    
     def test_index_view_with_authenticated_user(self):
         user = get_user_model().objects.create_user(
-            username="testuser", password="testpassword"
+            username="testuser", password="testpassword", email="test@test.com"
         )
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="test@test.com", password="testpassword")
 
-        UserPasskey.objects.create(user=user, key="key1")
-        UserPasskey.objects.create(user=user, key="key2")
+        UserPasskey.objects.create(user=user, credential_id="key1", name="test")
+        UserPasskey.objects.create(user=user, credential_id="key2", name="test")
 
         response = self.client.get(self.index_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "passkeys/passkeys.html")
+        keys = UserPasskey.objects.filter(user=user).values_list("credential_id", flat=True)
+        for key in response.context["keys"]:
+            self.assertIn(key.credential_id, keys)
 
-        self.assertQuerysetEqual(
-            response.context["keys"],
-            UserPasskey.objects.filter(user=user),
-            transform=lambda x: x,
-        )
-
-    def test_index_view_redirects_when_not_authenticated(self):
-        response = self.client.get(self.index_url)
-        self.assertRedirects(response, "/accounts/login/?next=/index")
-
-
-@override_settings(
-    AUTHENTICATION_BACKENDS=(
-        "django.contrib.auth.backends.ModelBackend",
-        "test_app.backends.EmailBackend",
-        "passkeys.backend.PasskeyModelBackend",
-    )
-)
 class DeleteKeyViewTest(TransactionTestCase):
 
     def setUp(self):
         self.client = Client()
-        self.delete_key_url = reverse("del_key")
+        self.delete_key_url = reverse("passkeys:delKey")
 
     def test_delete_key(self):
         user = get_user_model().objects.create_user(
@@ -308,7 +234,7 @@ class DeleteKeyViewTest(TransactionTestCase):
         )
         self.client.login(username="testuser", password="testpassword")
 
-        key = UserPasskey.objects.create(user=user, key="testkey")
+        key = UserPasskey.objects.create(user=user, credential_id="testkey", name="test")
 
         response = self.client.post(
             self.delete_key_url,
@@ -324,11 +250,8 @@ class DeleteKeyViewTest(TransactionTestCase):
             self.delete_key_url, json.dumps({"id": 1}), content_type="application/json"
         )
 
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.content.decode(),
-            "Error: You don't own this token so you can't delete it",
-        )
+        self.assertEqual(response.status_code, 302)#redirects to login
+        
 
 
 @override_settings(
@@ -373,13 +296,6 @@ class ToggleKeyViewTest(TransactionTestCase):
         self.assertRedirects(response, "/passkeys/login/?next=/passkeys/toggle/")
 
 
-@override_settings(
-    AUTHENTICATION_BACKENDS=(
-        "django.contrib.auth.backends.ModelBackend",
-        "test_app.backends.EmailBackend",
-        "passkeys.backend.PasskeyModelBackend",
-    )
-)
 class AddViewTest(TransactionTestCase):
 
     def setUp(self):

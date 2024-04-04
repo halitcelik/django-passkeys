@@ -2,8 +2,7 @@ import json
 from base64 import urlsafe_b64encode
 from importlib import import_module
 
-from django.http import HttpRequest
-from django.test import RequestFactory, TransactionTestCase, Client, override_settings
+from django.test import RequestFactory, TransactionTestCase, Client
 from django.urls import reverse
 
 from django.conf import settings
@@ -28,7 +27,7 @@ class test_fido(TransactionTestCase):
         self.user_model = get_user_model()
         if self.user_model.objects.filter(username="test").count() == 0:
             self.user = self.user_model.objects.create_user(
-                username="test", password="test"
+                username="test", password="test", email="test@test.com"
             )
         else:
             self.user = self.user_model.objects.get(username="test")
@@ -42,15 +41,11 @@ class test_fido(TransactionTestCase):
         self.client.cookies["sessionid"] = store.session_key
 
         self.client.post(
-            "/passkeys/login", {"username": "test", "password": "test", "passkeys": ""}
+            reverse("passkeys:login"), {"email": "test@test.com", "password": "test", "passkeys": ""}
         )
         self.factory = RequestFactory()
 
     def test_key_reg(self):
-        self.client.post(
-            reverse("passkeys:login"),
-            {"username": "test", "password": "test", "passkeys": ""},
-        )
         r = self.client.get(reverse("passkeys:reg_begin"))
         self.assertEquals(r.status_code, 200)
         j = json.loads(r.content)
@@ -74,7 +69,7 @@ class test_fido(TransactionTestCase):
 
         self.assertEquals(j["status"], "OK")
         self.assertEquals(UserPasskey.objects.latest("id").name, "testKey")
-        return
+        return s
 
     def test_auto_key_name(self):
         r = self.client.get(reverse("passkeys:reg_begin"))
@@ -120,14 +115,14 @@ class test_fido(TransactionTestCase):
 
     def test_passkey_login(self):
         authenticator = self.test_key_reg()
-        self.client.get("/auth/logout")
+        self.client.get("/logout")
         r = self.client.get(reverse("passkeys:auth_begin"))
         self.assertEquals(r.status_code, 200)
         j = json.loads(r.content)
         j["publicKey"]["challenge"] = j["publicKey"]["challenge"].encode("ascii")
 
         res = authenticator.get(j, "https://" + j["publicKey"]["rpId"])
-        u = reverse("login")
+        u = reverse("passkeys:login.passkey")
         self.client.post(
             u,
             {"passkeys": json.dumps(res), "username": "", "password": ""},
@@ -142,7 +137,7 @@ class test_fido(TransactionTestCase):
         authenticator = self.test_key_reg()
         self.client.get("/auth/logout")
         session = self.session
-        session["base_username"] = "test"
+        session["base_username"] = "test@test.com"
         session.save(must_create=True)
         self.client.cookies["sessionid"] = session.session_key
         r = self.client.get(reverse("passkeys:auth_begin"))
