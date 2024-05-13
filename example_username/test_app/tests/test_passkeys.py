@@ -42,6 +42,7 @@ class test_passkeys(TransactionTestCase):
             {"username": "test", "password": "test123", "passkeys": ""},
         )
         self.assertFalse(self.client.session.get("_auth_user_id", False))
+        
     @tag("views")
     def test_username_password_login(self):
         self.client.post(

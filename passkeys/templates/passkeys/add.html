@@ -26,6 +26,7 @@
                 {% endif %}
                 <div id="content-main">
                 <form class="passkeys-registration-form" id="passkeys-registration-form" method="post" action=".">
+                    {% csrf_token %}
                     <div class="form-row">
                         <label for="key_name">Enter a name for your key:</label>
                         <input type="text" name="email" autofocus maxlength="155" required="" id="key_name">
